@@ -466,7 +466,10 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:14
 
   <div style="display:flex;justify-content:space-between;align-items:center;margin:14px 0 10px;">
     <div class="card-title" style="margin:0;">Les bâtiments de la SCI</div>
-    <button class="btn btn-p" onclick="openBien()">+ Ajouter un bâtiment</button>
+    <div style="display:flex;align-items:center;gap:12px;">
+      <button class="btn btn-p" onclick="openBien()">+ Ajouter un bâtiment</button>
+      <span style="font-size:11px;color:var(--text3);cursor:pointer;text-decoration:underline;" onclick="restoreHidden()">Restaurer les supprimés</span>
+    </div>
   </div>
 
   <div id="immo-list"></div>
@@ -759,9 +762,9 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:14
   <div class="alert a-b"><span>🏠</span><div><strong>Assurances habitation & véhicules.</strong> Dépose tes contrats dans le chat (PDF) et je remplis les cartes avec les vraies infos : assureur, n° de contrat, échéance, prime annuelle, garanties.</div></div>
 
   <div class="g4">
-    <div class="kpi"><div class="kl">Contrats biens</div><div class="kv" id="bien-count">0</div><div class="ks">À renseigner</div></div>
-    <div class="kpi"><div class="kl">Prime totale / an</div><div class="kv">—</div><div class="ks">Après import</div></div>
-    <div class="kpi war"><div class="kl">Prochaine échéance</div><div class="kv">—</div><div class="ks">À surveiller</div></div>
+    <div class="kpi"><div class="kl">Contrats biens</div><div class="kv" id="bien-count">0</div><div class="ks">Fiches enregistrées</div></div>
+    <div class="kpi"><div class="kl">Prime totale / an</div><div class="kv" id="bien-prime">—</div><div class="ks">Primes connues</div></div>
+    <div class="kpi war"><div class="kl">Prochaine échéance</div><div class="kv" id="bien-ech">—</div><div class="ks" id="bien-ech-sub">À surveiller</div></div>
     <div class="kpi"><div class="kl">Sinistres en cours</div><div class="kv">0</div><div class="ks">—</div></div>
   </div>
 
@@ -779,31 +782,14 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:14
   </div>
 
   <div class="card-title">Véhicules</div>
-  <div class="soc-grid">
-    <div class="soc-card miss" onclick="sw('import',null)">
-      <div class="soc-hdr"><div><div class="soc-name">Voiture</div><div class="soc-type">Auto · à préciser</div></div><span class="tag tag-gr">À compléter</span></div>
-      <div class="soc-nums">
-        <div class="soc-num"><div class="nl">Assureur</div><div class="nv" style="color:var(--warn)">→ Importer</div></div>
-        <div class="soc-num"><div class="nl">Prime/an</div><div class="nv">—</div></div>
-        <div class="soc-num"><div class="nl">Formule</div><div class="nv">—</div></div>
-        <div class="soc-num"><div class="nl">Échéance</div><div class="nv">—</div></div>
-      </div>
-    </div>
-    <div class="soc-card miss" onclick="sw('import',null)">
-      <div class="soc-hdr"><div><div class="soc-name">Moto</div><div class="soc-type">Moto · à préciser</div></div><span class="tag tag-gr">À compléter</span></div>
-      <div class="soc-nums">
-        <div class="soc-num"><div class="nl">Assureur</div><div class="nv" style="color:var(--warn)">→ Importer</div></div>
-        <div class="soc-num"><div class="nl">Prime/an</div><div class="nv">—</div></div>
-        <div class="soc-num"><div class="nl">Formule</div><div class="nv">—</div></div>
-        <div class="soc-num"><div class="nl">Échéance</div><div class="nv">—</div></div>
-      </div>
-    </div>
-  </div>
-  <div class="alert a-w"><span>💡</span><div>Tu peux ajouter autant de véhicules que nécessaire — dis-le-moi avec les contrats et j'ajoute les cartes.</div></div>
+  <div class="alert a-g"><span>✓</span><div><strong>5 véhicules assurés.</strong> Chez Allianz : Range Rover Sport III (Burger Avenue 500) et Range Rover Evoque II. Chez AXA : Renault Kangoo III (conducteur F. Pedrini), Ferrari Lusso GTC4 et Porsche Cayenne. Fiches détaillées ci-dessous. Toutes les primes sont renseignées. <em>Note : le Kangoo a quitté Allianz pour AXA en 09/2025 ; la prime Allianz est conservée dans son historique.</em></div></div>
 
   <div class="card-title" style="margin-top:6px;">Mes fiches ajoutées</div>
   <div class="soc-grid" id="list-bien"></div>
-  <button class="btn btn-p" onclick="openFiche('bien')">+ Ajouter une assurance</button>
+  <div style="display:flex;align-items:center;gap:12px;">
+    <button class="btn btn-p" onclick="openFiche('bien')">+ Ajouter une assurance</button>
+    <span style="font-size:11px;color:var(--text3);cursor:pointer;text-decoration:underline;" onclick="restoreHidden()">Restaurer les fiches supprimées</span>
+  </div>
 </div>
 
 <!-- ASSURANCES ENTREPRISE & PRO -->
@@ -811,9 +797,9 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:14
   <div class="alert a-b"><span>🏢</span><div><strong>Assurances entreprise & professionnelles.</strong> Multirisque pro, RC pro, locaux des restaurants, flotte, etc. Dépose les contrats dans le chat pour remplir les cartes.</div></div>
 
   <div class="g4">
-    <div class="kpi"><div class="kl">Contrats pro</div><div class="kv" id="pro-count">0</div><div class="ks">À renseigner</div></div>
-    <div class="kpi"><div class="kl">Prime totale / an</div><div class="kv">—</div><div class="ks">Après import</div></div>
-    <div class="kpi war"><div class="kl">Prochaine échéance</div><div class="kv">—</div><div class="ks">À surveiller</div></div>
+    <div class="kpi"><div class="kl">Contrats pro</div><div class="kv" id="pro-count">0</div><div class="ks">Fiches enregistrées</div></div>
+    <div class="kpi"><div class="kl">Prime totale / an</div><div class="kv" id="pro-prime">—</div><div class="ks">Primes connues</div></div>
+    <div class="kpi war"><div class="kl">Prochaine échéance</div><div class="kv" id="pro-ech">—</div><div class="ks" id="pro-ech-sub">À surveiller</div></div>
     <div class="kpi"><div class="kl">Sociétés couvertes</div><div class="kv">—</div><div class="ks">BA / BKA / BKSJ…</div></div>
   </div>
 
@@ -828,31 +814,15 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:14
   </div>
 
   <div class="card-title">Contrats professionnels</div>
-  <div class="soc-grid">
-    <div class="soc-card miss" onclick="sw('import',null)">
-      <div class="soc-hdr"><div><div class="soc-name">Multirisque restaurants</div><div class="soc-type">Locaux & exploitation</div></div><span class="tag tag-gr">À compléter</span></div>
-      <div class="soc-nums">
-        <div class="soc-num"><div class="nl">Assureur</div><div class="nv" style="color:var(--warn)">→ Importer</div></div>
-        <div class="soc-num"><div class="nl">Prime/an</div><div class="nv">—</div></div>
-        <div class="soc-num"><div class="nl">N° contrat</div><div class="nv">—</div></div>
-        <div class="soc-num"><div class="nl">Échéance</div><div class="nv">—</div></div>
-      </div>
-    </div>
-    <div class="soc-card miss" onclick="sw('import',null)">
-      <div class="soc-hdr"><div><div class="soc-name">RC professionnelle</div><div class="soc-type">Responsabilité civile pro</div></div><span class="tag tag-gr">À compléter</span></div>
-      <div class="soc-nums">
-        <div class="soc-num"><div class="nl">Assureur</div><div class="nv" style="color:var(--warn)">→ Importer</div></div>
-        <div class="soc-num"><div class="nl">Prime/an</div><div class="nv">—</div></div>
-        <div class="soc-num"><div class="nl">N° contrat</div><div class="nv">—</div></div>
-        <div class="soc-num"><div class="nl">Échéance</div><div class="nv">—</div></div>
-      </div>
-    </div>
-  </div>
+  <div class="alert a-g"><span>✓</span><div><strong>4 contrats pro enregistrés.</strong> Immeuble PNO Dinan (Allianz), local Poissonnerie Laverune (MMA), multirisque local Fabrègues (BPCE/Banque Populaire) et assurance Employeur VH Company (AIG). Fiches détaillées ci-dessous dans « Mes fiches ajoutées ». <em>Note : la multirisque des restaurants exploités (BA / BKA / BKSJ) n'est pas encore renseignée — envoie-moi les contrats si tu les as.</em></div></div>
   <div class="alert a-w"><span>💡</span><div>La prévoyance TNS Roederer/Allianz et l'AREAS pro sont déjà dans « Prévoyance & Retraite ». Ici on met les assurances de biens et de responsabilité des sociétés.</div></div>
 
   <div class="card-title" style="margin-top:6px;">Mes fiches ajoutées</div>
   <div class="soc-grid" id="list-pro"></div>
-  <button class="btn btn-p" onclick="openFiche('pro')">+ Ajouter une assurance</button>
+  <div style="display:flex;align-items:center;gap:12px;">
+    <button class="btn btn-p" onclick="openFiche('pro')">+ Ajouter une assurance</button>
+    <span style="font-size:11px;color:var(--text3);cursor:pointer;text-decoration:underline;" onclick="restoreHidden()">Restaurer les fiches supprimées</span>
+  </div>
 </div>
 
 <!-- CHECKLIST -->
@@ -976,9 +946,22 @@ const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsI
 const sb = supabase.createClient(SUPA_URL, SUPA_KEY);
 
 // ── INIT ──
+// Liste des fiches "seed" (PDF/SCI, id négatif) masquées par l'utilisateur.
+// Stockée dans la table "coches" sous des clés "hidden_<id>", pour que la
+// suppression soit permanente d'une session à l'autre.
+let hiddenSeeds = new Set();
+
+async function loadHidden() {
+  try {
+    const {data} = await sb.from('coches').select('*').like('cle', 'hidden_%');
+    if(data) data.forEach(r => { if(r.valeur) hiddenSeeds.add(r.cle.replace('hidden_','')); });
+  } catch(e) {}
+}
+
 async function init() {
   try {
     await setupTables();
+    await loadHidden();
     await loadState();
     await loadFiches();
     await loadBiens();
@@ -1175,6 +1158,7 @@ async function saveFiche() {
     renderFiche(data || f, prime?[{annee:new Date().getFullYear(),montant:prime}]:[]);
   } catch(e) { renderFiche(f, []); }
   renderEcheances();
+  updateAssurStats();
   closeFiche();
 }
 
@@ -1191,6 +1175,8 @@ function trendLabel(hist) {
 
 function renderFiche(f, hist) {
   hist = hist || [];
+  // Ne pas afficher une fiche seed (PDF) que l'utilisateur a supprimée
+  if(f.id && f.id < 0 && hiddenSeeds.has(String(f.id))) return;
   allFiches.push(f);
   const list = catToList[f.categorie]==='pro' ? 'list-pro' : 'list-bien';
   const wrap = document.getElementById(list);
@@ -1201,7 +1187,12 @@ function renderFiche(f, hist) {
   const prime = f.prime ? Math.round(f.prime).toLocaleString('fr-FR')+'€' : '—';
   const histTxt = hist.length ? hist.sort((a,b)=>a.annee-b.annee).map(h=>`${h.annee}: ${Math.round(h.montant).toLocaleString('fr-FR')}€`).join(' · ') : 'Aucun historique';
   const explBlock = f.explication ? `<details style="margin-top:8px;"><summary style="cursor:pointer;font-size:11px;color:var(--accent);font-weight:600;">📄 Explication du contrat</summary><div style="font-size:12px;color:var(--text2);line-height:1.5;margin-top:6px;">${f.explication}</div></details>` : '';
-  d.innerHTML = `<div class="soc-hdr"><div><div class="soc-name">${f.nom}</div><div class="soc-type">${f.categorie}${f.assureur?' · '+f.assureur:''}</div></div>${(f.id&&f.id>0)?`<span style="cursor:pointer;color:var(--text3);" onclick="deleteFiche(${f.id},this)">×</span>`:'<span class="tag tag-g">PDF</span>'}</div>
+  const isSeed = f.id && f.id < 0;
+  const delBtn = `<span title="Supprimer cette fiche" style="cursor:pointer;color:var(--text3);font-size:16px;line-height:1;padding:0 2px;" onclick="deleteFiche(${f.id},this)">×</span>`;
+  const hdrRight = isSeed
+    ? `<div style="display:flex;align-items:center;gap:6px;"><span class="tag tag-g">PDF</span>${delBtn}</div>`
+    : delBtn;
+  d.innerHTML = `<div class="soc-hdr"><div><div class="soc-name">${f.nom}</div><div class="soc-type">${f.categorie}${f.assureur?' · '+f.assureur:''}</div></div>${hdrRight}</div>
 <div class="soc-nums">
   <div class="soc-num"><div class="nl">Prime actuelle</div><div class="nv">${prime}</div></div>
   <div class="soc-num"><div class="nl">Échéance</div><div class="nv">${f.echeance||'—'}</div></div>
@@ -1240,9 +1231,28 @@ async function addPrime(id, btn) {
 
 async function deleteFiche(id, el) {
   if(!confirm('Supprimer cette fiche ?')) return;
-  try { await sb.from('assurances').delete().eq('id', id); } catch(e) {}
+  if(id < 0) {
+    // Fiche issue d'un PDF (seed) : on la masque de façon permanente
+    hiddenSeeds.add(String(id));
+    try { await sb.from('coches').upsert({cle:'hidden_'+id, valeur:true, updated_at:new Date().toISOString()}, {onConflict:'cle'}); } catch(e) {}
+  } else {
+    try { await sb.from('assurances').delete().eq('id', id); } catch(e) {}
+  }
   const card = el.closest('.soc-card');
   if(card) card.remove();
+  allFiches = allFiches.filter(f => f.id !== id);
+  renderEcheances();
+  updateAssurStats();
+}
+
+// Restaure toutes les fiches/bâtiments PDF supprimés (seed masqués).
+// Ne touche pas aux fiches ajoutées manuellement et réellement supprimées de Supabase.
+async function restoreHidden() {
+  if(hiddenSeeds.size === 0) { alert('Aucune fiche PDF supprimée à restaurer.'); return; }
+  if(!confirm('Restaurer toutes les fiches et bâtiments PDF que tu as supprimés ?')) return;
+  try { await sb.from('coches').delete().like('cle','hidden_%'); } catch(e) {}
+  hiddenSeeds.clear();
+  location.reload();
 }
 
 // Assurances réelles (extraites des PDF) — affichées en dur
@@ -1252,7 +1262,42 @@ const ASSUR_SEED = [
     hist:[{annee:2025,montant:1434.85}]},
   {id:-102, categorie:'Entreprise / Pro', nom:'Immeuble Funéraire — Pamiers', assureur:'Allianz Immeuble (n° 62418208)', prime:1566.52, echeance:'02/09/2026',
     explication:"Assurance de l'immeuble Funéraire (Rte de Verniolle, Pamiers, 748 m², loué à OGF, usage pompes funèbres). Garanties : incendie, tempête/grêle/neige, attentats, dégâts des eaux, vol, bris de glaces, catastrophes naturelles, RC immeuble, défense pénale et recours, assistance. Franchise générale 500 €. Effet 02/09/2022, échéance annuelle au 02/09. ⚠ Prime en hausse de +22% en 3 ans (1 282€ → 1 567€) — candidat à renégociation.",
-    hist:[{annee:2022,montant:1281.86},{annee:2024,montant:1404.77},{annee:2025,montant:1566.52}]}
+    hist:[{annee:2022,montant:1281.86},{annee:2024,montant:1404.77},{annee:2025,montant:1566.52}]},
+
+  // ── Immeubles / locaux (Entreprise / Pro) ──
+  {id:-103, categorie:'Entreprise / Pro', nom:'Immeuble PNO — Dinan (23 rue Thiers)', assureur:'Allianz Immeuble (n° 62418209)', prime:523.59, echeance:'02/09/2026',
+    explication:"Assurance Propriétaire Non Occupant de l'immeuble locatif « Des Acacias » (23 rue Thiers, 22100 Dinan, 397 m²), souscrit par la SCI VH Immo. Immeuble à usage habitation/bureau avec occupants multiples. Garanties : incendie, tempête/grêle/neige, attentats, dégâts des eaux, vol, bris de glaces, catastrophes naturelles, RC incendie/dégâts des eaux, RC immeuble, défense pénale et recours, assistance. Franchise générale 500 € (ne s'applique pas aux dommages corporels). Avenant 001 à effet du 15/09/2022, échéance principale au 02/09. Prélèvement mensuel le 5. ⚠ Prime en hausse de +11% en 1 an (471€ → 524€).",
+    hist:[{annee:2024,montant:471.39},{annee:2025,montant:523.59}]},
+  {id:-104, categorie:'Entreprise / Pro', nom:'Local Poissonnerie — Laverune', assureur:'MMA CARAT PNE (n° 149368100)', prime:274.00, echeance:'01/06/2026',
+    explication:"Multirisque Propriétaire Non Exploitant pour le bâtiment 2 avenue du Château, 34880 Laverune (51 m², activité poissonnerie), souscrit par la SCI VH Immo. Garanties de base : RC-Protection juridique Recours, dégâts des eaux exploitation, bris des glaces/verres/marbres, vol (détériorations immobilières), incendie et risques associés exploitation. Bâtiment en matériaux durs (clause n° 028). Aucune garantie habitation. Contrat à effet du 05/06/2024, échéance anniversaire au 01/06, paiement annuel. Aucun sinistre antérieur déclaré.",
+    hist:[{annee:2024,montant:274.00}]},
+  {id:-105, categorie:'Entreprise / Pro', nom:'Multirisque Pro — Local Fabrègues', assureur:'BPCE IARD / Banque Populaire (n° MCE 001)', prime:267.29, echeance:'01/01/2026',
+    explication:"ASSUR-BP Multirisque Pro pour le local 150 rue Gratien Saumade, 34690 Fabrègues (100 m², activité secrétariat, locataire), souscrit par Vincent Hilaire. Garanties : incendie, dommages électriques, dégâts des eaux, événements climatiques, bris des vitres/vitrines/enseignes, choc de véhicules, RC du fait des locaux, vol/tentative/vandalisme (contenu 1 500€), défense pénale-recours, catastrophes naturelles et attentats, assistance. Franchise sinistre locaux 300 €. Effet 17/12/2024. CA prévisionnel déclaré 200 000€. ⚠ Conseils non suivis : pertes d'exploitation, bris de matériel et dommages aux aménagements extérieurs non souscrits.",
+    hist:[{annee:2025,montant:267.29}]},
+
+  // ── Responsabilité dirigeant / employeur (Entreprise / Pro) ──
+  {id:-106, categorie:'Entreprise / Pro', nom:'Assurance Employeur — VH Company', assureur:'AIG Risques Financiers (n° 0007991558)', prime:3939.60, echeance:'01/04/2026',
+    explication:"Assurance « Employeur » (responsabilité sociale) souscrite par VH Company auprès d'AIG Europe SA, via le courtier Assurances Nantaises (code 144039). Couvre les conséquences de la responsabilité pour violation sociale commise à l'encontre d'un assuré personne physique ou d'un postulant à l'emploi, pour le souscripteur et ses filiales. Plafond 500 000 € par période d'assurance. Applicabilité monde entier, hors réclamations fondées sur une violation sociale au sein d'une filiale immatriculée aux États-Unis. Période du 01/04/2025 au 01/04/2026. Prime nette 3 614,31€ + taxes 325,29€.",
+    hist:[{annee:2025,montant:3939.60}]},
+
+  // ── Véhicules (Habitation & Véhicules) ──
+  {id:-107, categorie:'Auto', nom:'Range Rover Sport III (GQ-111-XJ)', assureur:'Allianz Auto (n° AF413090170)', prime:2019.44, echeance:'29/08/2026',
+    explication:"Assurance auto Allianz souscrite par Burger Avenue 500. Véhicule Land Rover Range Rover Sport III P510e plug-in hybride (valeur neuve 140 100 €), immatriculé GQ-111-XJ (1ère mise en circulation 16/06/2023). Conducteur déclaré : Vincent Hilaire (permis 1997). Formule Tous risques C3, sans forfait kilométrique. Bonus 50% (CRM 0,50). Date de souscription 29/08/2023, échéance annuelle au 29/08. Prime 2025-2026 : 2 019,44 € (avis d'échéance du 06/07/2025, prélèvement le 05/08). ⚠ Prime en hausse de +31% depuis la souscription (1 540 € → 2 019 €).",
+    hist:[{annee:2023,montant:1539.62},{annee:2025,montant:2019.44}]},
+  {id:-108, categorie:'Auto', nom:'Range Rover Evoque II (GH-299-WR)', assureur:'Allianz Auto (n° AF407490277)', prime:1654.28, echeance:'02/08/2026',
+    explication:"Assurance auto Allianz souscrite par Vincent Hilaire (2 chemin Vieux, 34690 Fabrègues). Véhicule Land Rover Evoque II P300 AWD R-Dynamic HSE, immatriculé GH-299-WR (1ère mise en circulation 01/08/2022). Conducteur déclaré : Vincent Hilaire (permis 1997). Formule Tous risques C3, sans forfait kilométrique. Bonus 50% (CRM 0,50). Souscription 02/08/2022, échéance annuelle au 02/08. Prime 2025-2026 : 1 654,28 € (avis d'échéance du 06/07/2025, prélèvement le 05/08). Tarif privilégié multi-contrats. ⚠ Prime en hausse de +15% depuis l'avenant 2024 (1 438 € → 1 654 €).",
+    hist:[{annee:2024,montant:1437.86},{annee:2025,montant:1654.28}]},
+  {id:-109, categorie:'Auto', nom:'Renault Kangoo III (GP-335-NA)', assureur:'AXA Auto (n° 0000022408099904)', prime:586.87, echeance:'01/09/2026',
+    explication:"Assurance auto AXA souscrite par Vincent Hilaire (agence Frerejean, Lyon), formule Tous risques Essentielle. Véhicule Renault Kangoo III Van 1.3 TCE 130, immatriculé GP-335-NA. Conducteur principal : Fabien Pedrini (né 27/06/1985, permis 2003). Bonus 50% (CRM 0,50). Forfait 10 000 km/an. Effet 23/09/2025, échéance principale au 01/09, prélèvement annuel le 05/09. Prime 586,87 €/an. ⚠ A REMPLACÉ le contrat Allianz AF413544927 — résiliation Allianz demandée dans les conditions AXA du 21/08/2025. Chez Allianz la prime était passée de 663 € (souscription 07/2024) à 821 € (échéance 07/2025) ; le passage chez AXA à 587 € fait baisser le coût. Historique conservé pour comparaison.",
+    hist:[{annee:2024,montant:663.21},{annee:2025,montant:586.87}]},
+
+  // ── Ferrari & Porsche (AXA, perso Vincent) ──
+  {id:-110, categorie:'Auto', nom:'Ferrari Lusso GTC4 (FQ-651-HD)', assureur:'AXA Auto (n° 11274825304)', prime:1545.03, echeance:'01/07/2026',
+    explication:"Assurance auto AXA souscrite par Vincent Hilaire (agence Frerejean, Lyon), formule Auto des professionnels. Véhicule Ferrari Lusso GTC4 V12 6.3, immatriculé FQ-651-HD, puissance fiscale réelle 66 CV (1ère mise en circulation 06/2020), valeur à neuf 254 000 €. Conducteur principal : Vincent Hilaire. Usage privé, forfait 8 000 km/an. Bonus 50% (CRM 0,50). Effet 23/07/2024, échéance principale au 01/07. Prime 1 545,03 €/an. ⚠ Clause : véhicule devant être équipé d'un système de géolocalisation autonome (justificatif sous 30 j) et stationné en garage sécurisé (détecteurs de fumée + extincteurs), sinon indemnité réduite de 20%. Note : remplace le devis Ferrari Roma de 2022 (non retenu).",
+    hist:[{annee:2024,montant:1545.03}]},
+  {id:-111, categorie:'Auto', nom:'Porsche Cayenne Turbo E-Hybrid (GW-448-TG)', assureur:'AXA Auto (n° 11407443804)', prime:949.65, echeance:'01/08/2026',
+    explication:"Assurance auto AXA souscrite par Vincent Hilaire (agence Frerejean, Lyon), formule Auto des professionnels. Véhicule Porsche Cayenne 4.0 V8 Turbo E-Hybrid, immatriculé GW-448-TG, puissance fiscale 53 CV (1ère mise en circulation 05/2024), leasing. Conducteur principal : Vincent Hilaire. Usage privé + trajets domicile/travail, forfait 8 000 km/an. Bonus 50% (CRM 0,50). Effet 21/08/2025, échéance principale au 01/08, prélèvement le 05/09. Avantage Privépro (transfert de garanties sur autre véhicule AXA). Prime 949,65 €/an. ⚠ À vérifier : carte grise établie au nom de « MEIA MEIA » (08/2025) alors que le souscripteur du contrat est Vincent Hilaire. Clause géolocalisation obligatoire sous 30 j.",
+    hist:[{annee:2025,montant:949.65}]},
 ];
 
 async function loadFiches() {
@@ -1270,7 +1315,8 @@ async function loadFiches() {
       });
     }
     renderEcheances();
-  } catch(e) { renderEcheances(); }
+    updateAssurStats();
+  } catch(e) { renderEcheances(); updateAssurStats(); }
 }
 
 // Parse une échéance "JJ/MM/AAAA" en Date (ou null)
@@ -1303,6 +1349,47 @@ function renderEcheances() {
     const prime = f.prime?Math.round(f.prime).toLocaleString('fr-FR')+'€':'—';
     return `<tr><td><strong>${f.nom}</strong></td><td>${f.assureur||'—'}</td><td class="r">${prime}</td><td class="r">${f.echeance}</td><td class="r">${tag}</td></tr>`;
   }).join('');
+}
+
+// Met à jour les compteurs, primes totales, prochaines échéances et pastilles
+function updateAssurStats() {
+  const today = new Date();
+  const groups = {bien:[], pro:[]};
+  allFiches.forEach(f => {
+    const g = catToList[f.categorie]==='pro' ? 'pro' : 'bien';
+    groups[g].push(f);
+  });
+  for(const g of ['bien','pro']) {
+    const fiches = groups[g];
+    // compteur
+    const cnt = document.getElementById(g+'-count');
+    if(cnt) cnt.textContent = fiches.length;
+    // badge sidebar
+    const badge = document.getElementById('b-'+g);
+    if(badge){ badge.textContent = fiches.length || '—'; if(fiches.length) badge.classList.add('g'); }
+    // prime totale (somme des primes connues)
+    const primeEl = document.getElementById(g+'-prime');
+    const total = fiches.reduce((s,f)=>s+(f.prime||0),0);
+    const nbPrime = fiches.filter(f=>f.prime).length;
+    if(primeEl) primeEl.textContent = total ? Math.round(total).toLocaleString('fr-FR')+'€' : '—';
+    const primeSub = primeEl ? primeEl.parentElement.querySelector('.ks') : null;
+    if(primeSub) primeSub.textContent = nbPrime ? `${nbPrime}/${fiches.length} prime(s) connue(s)` : 'Primes à compléter';
+    // prochaine échéance
+    const echEl = document.getElementById(g+'-ech');
+    const echSub = document.getElementById(g+'-ech-sub');
+    const futur = fiches.map(f=>({f, dt:parseEch(f.echeance)})).filter(x=>x.dt).sort((a,b)=>a.dt-b.dt);
+    if(echEl){
+      if(!futur.length){ echEl.textContent='—'; if(echSub) echSub.textContent='À surveiller'; }
+      else {
+        const next = futur[0];
+        echEl.textContent = next.f.echeance;
+        if(echSub){
+          const days = Math.round((next.dt-today)/(1000*60*60*24));
+          echSub.textContent = next.f.nom + (days>=0 ? ` · dans ${days}j` : ' · échue');
+        }
+      }
+    }
+  }
 }
 
 // ── IMMOBILIER (SCI VH Immo) ──
@@ -1348,6 +1435,8 @@ function loyerTrend(hist) {
 
 function renderBien(b, hist) {
   hist = hist || [];
+  // Ne pas afficher un bâtiment seed (SCI) que l'utilisateur a supprimé
+  if(b.id && b.id < 0 && hiddenSeeds.has(String(b.id))) return;
   const emptyMsg = document.getElementById('immo-empty');
   if(emptyMsg) emptyMsg.style.display='none';
   const wrap = document.getElementById('immo-list');
@@ -1357,8 +1446,13 @@ function renderBien(b, hist) {
   if(b.id) d.dataset.bid = b.id;
   const histTxt = hist.length ? [...hist].sort((a,b)=>a.annee-b.annee).map(h=>`${h.annee}: ${eur(h.montant)}`).join(' · ') : 'Aucun historique';
   const loyerAn = b.loyer_mensuel ? b.loyer_mensuel*12 : null;
+  const isSeed = b.id && b.id < 0;
+  const delBtn = `<span title="Supprimer ce bâtiment" style="cursor:pointer;color:var(--text3);font-size:16px;line-height:1;padding:0 2px;" onclick="deleteBien(${b.id},this)">×</span>`;
+  const hdrRight = isSeed
+    ? `<div style="display:flex;align-items:center;gap:6px;"><span class="tag tag-g">SCI</span>${delBtn}</div>`
+    : delBtn;
   d.innerHTML = `
-  <div class="soc-hdr"><div><div class="soc-name">${b.nom}</div><div class="soc-type">${b.adresse||''}${b.type_local?' · '+b.type_local:''}</div></div>${(b.id&&b.id>0)?`<span style="cursor:pointer;color:var(--text3);" onclick="deleteBien(${b.id},this)">×</span>`:'<span class="tag tag-g">SCI</span>'}</div>
+  <div class="soc-hdr"><div><div class="soc-name">${b.nom}</div><div class="soc-type">${b.adresse||''}${b.type_local?' · '+b.type_local:''}</div></div>${hdrRight}</div>
   <div class="soc-nums" style="flex-wrap:wrap;gap:14px;">
     <div class="soc-num"><div class="nl">Coût d'achat</div><div class="nv">${eur(b.cout_achat)}</div></div>
     <div class="soc-num"><div class="nl">Loyer/an</div><div class="nv">${eur(loyerAn)}</div></div>
@@ -1398,7 +1492,13 @@ async function addLoyer(id, btn) {
 
 async function deleteBien(id, el) {
   if(!confirm('Supprimer ce bâtiment ?')) return;
-  try { await sb.from('biens_immo').delete().eq('id', id); } catch(e){}
+  if(id < 0) {
+    // Bâtiment seed (SCI) : masquage permanent
+    hiddenSeeds.add(String(id));
+    try { await sb.from('coches').upsert({cle:'hidden_'+id, valeur:true, updated_at:new Date().toISOString()}, {onConflict:'cle'}); } catch(e) {}
+  } else {
+    try { await sb.from('biens_immo').delete().eq('id', id); } catch(e){}
+  }
   const card = el.closest('.card');
   if(card) card.remove();
   immoBiens = immoBiens.filter(b=>b.id!==id);
