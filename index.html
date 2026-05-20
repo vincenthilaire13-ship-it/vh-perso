@@ -162,6 +162,8 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:14
 
 /* STATUS */
 .status-bar{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text3);padding:6px 0;}
+.bat-sub{font-size:12px;padding:6px 12px;}
+.bat-sub.active{background:var(--accent);color:#fff;border-color:var(--accent);}
 .status-dot{width:6px;height:6px;border-radius:50%;background:var(--success);}
 .status-dot.off{background:var(--danger);}
 </style>
@@ -186,6 +188,8 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:14
   <div class="sb-item" onclick="sw('soc-bksj',this)"><span class="sb-ico">▣</span>BK Saint-Jean<span class="sb-badge g" id="b-bksj">✓</span></div>
   <div class="sb-item" onclick="sw('soc-fvh',this)"><span class="sb-ico">▣</span>FVH SARL<span class="sb-badge r" id="b-fvh">!</span></div>
   <div class="sb-item" onclick="sw('soc-sci',this)"><span class="sb-ico">▣</span>SCI VH Immo<span class="sb-badge g" id="b-sci">✓</span></div>
+  <div class="sb-section">Patrimoine</div>
+  <div class="sb-item" onclick="sw('batiments',this)"><span class="sb-ico">🏛</span>Bâtiments<span class="sb-badge" id="b-bat">0</span></div>
   <div class="sb-section">Impôts</div>
   <div class="sb-item" onclick="sw('declaration',this)"><span class="sb-ico">📋</span>Ma déclaration 2026</div>
   <div class="sb-item" onclick="sw('checklist',this)"><span class="sb-ico">☐</span>Checklist documents</div>
@@ -494,6 +498,21 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:14
         <input id="bi-loyer" class="sim-in" type="number" placeholder="Loyer mensuel €" style="font-family:var(--font);flex:1;">
         <input id="bi-bail" class="sim-in" placeholder="Échéance bail" style="font-family:var(--font);flex:1;">
       </div>
+      <div style="display:flex;gap:8px;">
+        <input id="bi-surface" class="sim-in" type="number" placeholder="Surface m²" style="font-family:var(--font);flex:1;">
+        <input id="bi-depot" class="sim-in" type="number" placeholder="Dépôt de garantie €" style="font-family:var(--font);flex:1;">
+      </div>
+      <div style="display:flex;gap:8px;">
+        <input id="bi-charges" class="sim-in" type="number" placeholder="Charges €/an" style="font-family:var(--font);flex:1;">
+        <select id="bi-index" class="sim-in" style="font-family:var(--font);flex:1;">
+          <option value="">Indexation…</option>
+          <option value="ILC">ILC (commercial)</option>
+          <option value="ILAT">ILAT (tertiaire)</option>
+          <option value="ICC">ICC (construction)</option>
+          <option value="Autre">Autre</option>
+        </select>
+      </div>
+      <input id="bi-revision" class="sim-in" placeholder="Date de révision du loyer (ex : 01/06)" style="font-family:var(--font);">
       <div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-top:4px;">Financement</div>
       <div style="display:flex;gap:8px;">
         <input id="bi-banque" class="sim-in" placeholder="Banque" style="font-family:var(--font);flex:1;">
@@ -825,6 +844,83 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:14
   </div>
 </div>
 
+<!-- BATIMENTS -->
+<div id="tab-batiments" class="panel">
+  <!-- VUE LISTE -->
+  <div id="bat-list-view">
+    <div class="alert a-b"><span>🏛</span><div><strong>Tes bâtiments, un dossier complet par bien.</strong> Crée un bâtiment, puis ouvre-le pour gérer l'acquisition (notaire), le prêt bancaire, le locataire et son bail, la facturation des loyers, la taxe foncière, le syndic et les documents. Tu peux tout supprimer.</div></div>
+
+    <div class="g4">
+      <div class="kpi acc"><div class="kl">Bâtiments</div><div class="kv" id="bat-count">0</div><div class="ks">Dans le portefeuille</div></div>
+      <div class="kpi suc"><div class="kl">Loyers annuels</div><div class="kv" id="bat-loyers">0€</div><div class="ks">Total HC déclaré</div></div>
+      <div class="kpi"><div class="kl">Valeur d'achat</div><div class="kv" id="bat-achat">0€</div><div class="ks">Cumul (hors notaire)</div></div>
+      <div class="kpi war"><div class="kl">Mensualités prêts</div><div class="kv" id="bat-pret">0€</div><div class="ks">Total / mois</div></div>
+    </div>
+
+    <div style="display:flex;justify-content:space-between;align-items:center;margin:14px 0 10px;">
+      <div class="card-title" style="margin:0;">Mes bâtiments</div>
+      <div style="display:flex;align-items:center;gap:12px;">
+        <button class="btn btn-p" onclick="openBat()">+ Nouveau bâtiment</button>
+        <span style="font-size:11px;color:var(--text3);cursor:pointer;text-decoration:underline;" onclick="restoreHidden()">Restaurer les supprimés</span>
+      </div>
+    </div>
+
+    <div id="bat-grid" class="soc-grid"></div>
+    <div id="bat-empty" class="card" style="text-align:center;color:var(--text3);padding:24px;">Aucun bâtiment. Clique « + Nouveau bâtiment » pour créer ton premier dossier, ou envoie-moi les documents (acte, bail, taxe foncière…) dans le chat.</div>
+  </div>
+
+  <!-- VUE DETAIL D'UN BATIMENT -->
+  <div id="bat-detail-view" style="display:none;">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+      <button class="btn" onclick="closeBatDetail()">← Retour</button>
+      <div style="flex:1;">
+        <div class="card-title" style="margin:0;" id="bat-d-name">Bâtiment</div>
+        <div style="font-size:12px;color:var(--text3);" id="bat-d-sub"></div>
+      </div>
+      <button class="btn" onclick="editBatIdentity()">✎ Modifier l'identité</button>
+      <button class="btn" style="color:var(--danger);border-color:var(--danger);" onclick="deleteBatFromDetail()">Supprimer ce bâtiment</button>
+    </div>
+
+    <!-- Sous-onglets du dossier -->
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;border-bottom:1px solid var(--border);padding-bottom:8px;">
+      <button class="btn bat-sub active" data-sub="acq" onclick="batSub('acq')">🏠 Acquisition & notaire</button>
+      <button class="btn bat-sub" data-sub="pret" onclick="batSub('pret')">🏦 Prêt bancaire</button>
+      <button class="btn bat-sub" data-sub="bail" onclick="batSub('bail')">📄 Locataire & bail</button>
+      <button class="btn bat-sub" data-sub="factu" onclick="batSub('factu')">🧾 Facturation loyers</button>
+      <button class="btn bat-sub" data-sub="taxe" onclick="batSub('taxe')">🏛 Taxe foncière</button>
+      <button class="btn bat-sub" data-sub="syndic" onclick="batSub('syndic')">👥 Syndic</button>
+      <button class="btn bat-sub" data-sub="docs" onclick="batSub('docs')">📎 Documents</button>
+    </div>
+
+    <div id="bat-sub-acq" class="bat-pane"></div>
+    <div id="bat-sub-pret" class="bat-pane" style="display:none;"></div>
+    <div id="bat-sub-bail" class="bat-pane" style="display:none;"></div>
+    <div id="bat-sub-factu" class="bat-pane" style="display:none;"></div>
+    <div id="bat-sub-taxe" class="bat-pane" style="display:none;"></div>
+    <div id="bat-sub-syndic" class="bat-pane" style="display:none;"></div>
+    <div id="bat-sub-docs" class="bat-pane" style="display:none;"></div>
+  </div>
+</div>
+
+<!-- MODAL NOUVEAU BATIMENT -->
+<div id="modal-bat" style="display:none;position:fixed;inset:0;background:rgba(26,24,20,0.5);z-index:100;align-items:center;justify-content:center;padding:20px;">
+  <div class="card" style="max-width:460px;width:100%;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+      <div class="card-title" style="margin:0;">Nouveau bâtiment</div>
+      <span style="cursor:pointer;font-size:20px;color:var(--text3);" onclick="closeBat()">×</span>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      <input id="bt-nom" class="sim-in" placeholder="Nom / référence (ex : Auchan Pérols)" style="font-family:var(--font);">
+      <input id="bt-adr" class="sim-in" placeholder="Adresse complète" style="font-family:var(--font);">
+      <input id="bt-type" class="sim-in" placeholder="Type (local commercial, magasin…)" style="font-family:var(--font);">
+    </div>
+    <div style="display:flex;gap:8px;margin-top:14px;">
+      <button class="btn btn-p" style="flex:1;" onclick="saveBat()">Créer le dossier</button>
+      <button class="btn" style="flex:1;" onclick="closeBat()">Annuler</button>
+    </div>
+  </div>
+</div>
+
 <!-- CHECKLIST -->
 <div id="tab-checklist" class="panel">
   <div class="alert a-b"><span>📅</span><div>Déclaration 2026 (revenus 2025) — Département 34, date limite fin mai/juin 2026.</div></div>
@@ -945,6 +1041,470 @@ const SUPA_URL = 'https://wbhgseotvlipalgmxchy.supabase.co';
 const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndiaGdzZW90dmxpcGFsZ214Y2h5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkyNjI0NTYsImV4cCI6MjA5NDgzODQ1Nn0.LoDkhHH56bFgRYwXAtX4IVb9qyx0_W2NAgzJ0x3Drpg';
 const sb = supabase.createClient(SUPA_URL, SUPA_KEY);
 
+// ── BÂTIMENTS (dossiers patrimoniaux détaillés) ──
+// Chaque bâtiment = 1 enregistrement Supabase (table "batiments") avec des
+// colonnes JSON pour les sous-listes. Si la table n'existe pas, fonctionne en
+// mémoire pour la session. Données : acq{}, bail{}, prets[], loyers[], taxes[],
+// syndic{appels:[]}, docs[].
+let batiments = [];
+let currentBat = null;        // id du bâtiment ouvert
+const eurB = n => (n||n===0) ? Math.round(n).toLocaleString('fr-FR')+'€' : '—';
+const numOrNull = s => { const n = parseFloat((''+s).replace(',','.')); return isNaN(n)?null:n; };
+
+async function loadBats() {
+  batiments = [];
+  try {
+    let {data} = await sb.from('batiments').select('*').order('created_at',{ascending:true});
+    // Amorçage unique : si la table est vide et qu'on n'a jamais amorcé, on
+    // importe les 7 bâtiments historiques (ils deviennent alors modifiables).
+    if((!data || data.length===0) && !(await batsAlreadySeeded())) {
+      await seedBatsFromBiens();
+      const r = await sb.from('batiments').select('*').order('created_at',{ascending:true});
+      data = r.data;
+    }
+    if(data) batiments = data.map(normalizeBat);
+  } catch(e) {}
+  renderBatList();
+}
+
+// Drapeau d'amorçage stocké dans la table "coches"
+async function batsAlreadySeeded() {
+  try {
+    const {data} = await sb.from('coches').select('*').eq('cle','bats_seeded').maybeSingle();
+    return !!(data && data.valeur);
+  } catch(e) { return false; }
+}
+
+// Convertit les 7 bâtiments historiques (BIENS_SEED) vers la structure détaillée
+async function seedBatsFromBiens() {
+  try {
+    for(const s of BIENS_SEED) {
+      const pret = (s.montant_pret || s.mensualite) ? [{
+        banque: (s.banque && s.banque!=='—') ? s.banque : '',
+        capital: s.montant_pret || null,
+        mensualite: s.mensualite || null,
+        taux: null,
+        fin: (s.fin_pret && s.fin_pret!=='—') ? s.fin_pret : '',
+        crd: null
+      }] : [];
+      // L'historique annuel des loyers encaissés devient des quittances annuelles "payées"
+      const loyers = (s.hist||[]).map(h => ({ periode:'Année '+h.annee, montant:h.montant, date_emission:'', paye:true }));
+      const payload = {
+        nom: s.nom, adresse: s.adresse, type_local: s.type_local,
+        acq: { date: s.date_achat||'', prix: s.cout_achat||null, notaire:null, etude:'', ref:'', valeur:null, notes:'' },
+        bail: { locataire: (s.locataire && s.locataire!=='—') ? s.locataire : '', loyer_mensuel: s.loyer_mensuel||null, surface:null, depot:null, charges:null, indexation:'', effet:'', fin: s.bail_echeance||'', revision:'', notes:'' },
+        prets: pret,
+        loyers: loyers,
+        taxes: [],
+        syndic: {appels:[]},
+        docs: []
+      };
+      await sb.from('batiments').insert(payload);
+    }
+    await sb.from('coches').upsert({cle:'bats_seeded', valeur:true, updated_at:new Date().toISOString()}, {onConflict:'cle'});
+  } catch(e) {}
+}
+
+// Garantit que toutes les sous-structures existent
+function normalizeBat(b) {
+  b.acq = b.acq || {};
+  b.bail = b.bail || {};
+  b.prets = b.prets || [];
+  b.loyers = b.loyers || [];
+  b.taxes = b.taxes || [];
+  b.syndic = b.syndic || {appels:[]};
+  if(!b.syndic.appels) b.syndic.appels = [];
+  b.docs = b.docs || [];
+  return b;
+}
+
+// Persiste un bâtiment (update si id, insert sinon)
+async function saveBatToDb(b) {
+  const payload = {
+    nom:b.nom, adresse:b.adresse, type_local:b.type_local,
+    acq:b.acq, bail:b.bail, prets:b.prets, loyers:b.loyers,
+    taxes:b.taxes, syndic:b.syndic, docs:b.docs
+  };
+  try {
+    if(b.id) { await sb.from('batiments').update(payload).eq('id', b.id); }
+    else {
+      const {data} = await sb.from('batiments').insert(payload).select().single();
+      if(data) b.id = data.id;
+    }
+  } catch(e) {}
+}
+
+// ---- VUE LISTE ----
+function renderBatList() {
+  const grid = document.getElementById('bat-grid');
+  const empty = document.getElementById('bat-empty');
+  if(!grid) return;
+  grid.innerHTML = '';
+  if(!batiments.length) { if(empty) empty.style.display='block'; }
+  else { if(empty) empty.style.display='none'; }
+  batiments.forEach(b => {
+    const loyerAn = b.bail && b.bail.loyer_mensuel ? b.bail.loyer_mensuel*12 : null;
+    const d = document.createElement('div');
+    d.className = 'soc-card';
+    d.style.cursor = 'pointer';
+    d.onclick = () => openBatDetail(b.id);
+    d.innerHTML = `
+      <div class="soc-hdr"><div><div class="soc-name">${b.nom}</div><div class="soc-type">${b.adresse||''}${b.type_local?' · '+b.type_local:''}</div></div><span class="tag tag-b">Ouvrir →</span></div>
+      <div class="soc-nums">
+        <div class="soc-num"><div class="nl">Loyer/an</div><div class="nv">${eurB(loyerAn)}</div></div>
+        <div class="soc-num"><div class="nl">Locataire</div><div class="nv" style="font-size:13px;">${(b.bail&&b.bail.locataire)||'—'}</div></div>
+      </div>`;
+    grid.appendChild(d);
+  });
+  recomputeBat();
+}
+
+function recomputeBat() {
+  const n = batiments.length;
+  const loyers = batiments.reduce((s,b)=>s+((b.bail&&b.bail.loyer_mensuel||0)*12),0);
+  const achat = batiments.reduce((s,b)=>s+((b.acq&&b.acq.prix||0)),0);
+  const pret = batiments.reduce((s,b)=>s+(b.prets||[]).reduce((x,p)=>x+(p.mensualite||0),0),0);
+  const set=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
+  set('bat-count', n); set('bat-loyers', eurB(loyers)); set('bat-achat', eurB(achat)); set('bat-pret', eurB(pret));
+  const badge = document.getElementById('b-bat'); if(badge) badge.textContent = n;
+}
+
+// ---- AJOUT / MODIFICATION BATIMENT ----
+let editingBatId = null;
+function openBat() {
+  editingBatId = null;
+  document.querySelector('#modal-bat .card-title').textContent = 'Nouveau bâtiment';
+  document.querySelector('#modal-bat .btn-p').textContent = 'Créer le dossier';
+  ['bt-nom','bt-adr','bt-type'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('modal-bat').style.display='flex';
+}
+function editBatIdentity() {
+  const b = batiments.find(x=>x.id===currentBat); if(!b) return;
+  editingBatId = b.id;
+  document.querySelector('#modal-bat .card-title').textContent = 'Modifier l\'identité';
+  document.querySelector('#modal-bat .btn-p').textContent = 'Enregistrer';
+  document.getElementById('bt-nom').value = b.nom||'';
+  document.getElementById('bt-adr').value = b.adresse||'';
+  document.getElementById('bt-type').value = b.type_local||'';
+  document.getElementById('modal-bat').style.display='flex';
+}
+function closeBat() { document.getElementById('modal-bat').style.display='none'; }
+async function saveBat() {
+  const nom = document.getElementById('bt-nom').value || 'Bâtiment sans nom';
+  const adresse = document.getElementById('bt-adr').value;
+  const type_local = document.getElementById('bt-type').value;
+  if(editingBatId != null) {
+    // Mode édition : on met à jour le bâtiment existant
+    const b = batiments.find(x=>x.id===editingBatId);
+    if(b) { b.nom=nom; b.adresse=adresse; b.type_local=type_local; await saveBatToDb(b); }
+    closeBat();
+    if(currentBat===editingBatId) {
+      document.getElementById('bat-d-name').textContent = nom;
+      document.getElementById('bat-d-sub').textContent = (adresse||'') + (type_local?' · '+type_local:'');
+    }
+    editingBatId = null;
+    renderBatList();
+    return;
+  }
+  const b = normalizeBat({ nom, adresse, type_local });
+  await saveBatToDb(b);
+  batiments.push(b);
+  renderBatList();
+  closeBat();
+  openBatDetail(b.id);
+}
+
+// ---- VUE DETAIL ----
+function getBat(id) { return batiments.find(b=>b.id===id) || (currentBat!=null && batiments.find(b=>b.id===currentBat)); }
+
+function openBatDetail(id) {
+  currentBat = id;
+  const b = batiments.find(x=>x.id===id);
+  if(!b) return;
+  document.getElementById('bat-list-view').style.display='none';
+  document.getElementById('bat-detail-view').style.display='block';
+  document.getElementById('bat-d-name').textContent = b.nom;
+  document.getElementById('bat-d-sub').textContent = (b.adresse||'') + (b.type_local?' · '+b.type_local:'');
+  batSub('acq');
+}
+function closeBatDetail() {
+  document.getElementById('bat-detail-view').style.display='none';
+  document.getElementById('bat-list-view').style.display='block';
+  currentBat = null;
+  renderBatList();
+}
+async function deleteBatFromDetail() {
+  const b = batiments.find(x=>x.id===currentBat); if(!b) return;
+  if(!confirm('Supprimer définitivement le dossier « '+b.nom+' » et tout son contenu ?')) return;
+  try { if(b.id) await sb.from('batiments').delete().eq('id', b.id); } catch(e){}
+  batiments = batiments.filter(x=>x!==b);
+  closeBatDetail();
+}
+
+// Navigation entre sous-sections
+function batSub(key) {
+  document.querySelectorAll('.bat-sub').forEach(x=>x.classList.toggle('active', x.dataset.sub===key));
+  document.querySelectorAll('.bat-pane').forEach(p=>p.style.display='none');
+  const pane = document.getElementById('bat-sub-'+key);
+  if(pane) pane.style.display='block';
+  const b = batiments.find(x=>x.id===currentBat); if(!b) return;
+  ({acq:renderAcq, pret:renderPret, bail:renderBail, factu:renderFactu, taxe:renderTaxe, syndic:renderSyndic, docs:renderDocs}[key])(b);
+}
+
+// petit utilitaire de champ formulaire
+function field(label, id, val, type, ph) {
+  return `<div style="display:flex;flex-direction:column;gap:3px;flex:1;min-width:140px;">
+    <label style="font-size:11px;color:var(--text3);">${label}</label>
+    <input id="${id}" class="sim-in" type="${type||'text'}" value="${val!=null?String(val).replace(/"/g,'&quot;'):''}" placeholder="${ph||''}" style="font-family:var(--font);">
+  </div>`;
+}
+
+// ===== ACQUISITION & NOTAIRE =====
+function renderAcq(b) {
+  const a = b.acq;
+  document.getElementById('bat-sub-acq').innerHTML = `
+  <div class="card">
+    <div class="card-title">🏠 Acquisition & frais de notaire</div>
+    <div style="display:flex;flex-wrap:wrap;gap:12px;">
+      ${field('Date d\'achat','acq-date',a.date,'text','ex : 12/06/2019')}
+      ${field('Prix d\'achat (€)','acq-prix',a.prix,'number')}
+      ${field('Frais de notaire (€)','acq-notaire',a.notaire,'number')}
+      ${field('Étude notariale','acq-etude',a.etude,'text','nom du notaire')}
+      ${field('Référence acte','acq-ref',a.ref,'text')}
+      ${field('Valeur estimée aujourd\'hui (€)','acq-valeur',a.valeur,'number')}
+    </div>
+    <textarea id="acq-notes" class="sim-in" placeholder="Notes (servitudes, lots, quote-part…)" style="font-family:var(--font);width:100%;margin-top:10px;min-height:60px;">${a.notes||''}</textarea>
+    <button class="btn btn-p" style="margin-top:10px;" onclick="saveAcq()">Enregistrer</button>
+  </div>`;
+}
+async function saveAcq() {
+  const b = batiments.find(x=>x.id===currentBat); if(!b) return;
+  const v=id=>document.getElementById(id).value;
+  b.acq = { date:v('acq-date'), prix:numOrNull(v('acq-prix')), notaire:numOrNull(v('acq-notaire')),
+    etude:v('acq-etude'), ref:v('acq-ref'), valeur:numOrNull(v('acq-valeur')), notes:v('acq-notes') };
+  await saveBatToDb(b); recomputeBat();
+  flash('acq');
+}
+
+// ===== PRET BANCAIRE (liste) =====
+function renderPret(b) {
+  const rows = (b.prets||[]).map((p,i)=>`
+    <tr><td><strong>${p.banque||'—'}</strong></td><td class="r">${eurB(p.capital)}</td><td class="r">${eurB(p.mensualite)}</td><td class="r">${p.taux!=null?p.taux+'%':'—'}</td><td class="r">${p.fin||'—'}</td><td class="r">${eurB(p.crd)}</td><td class="r"><span style="cursor:pointer;color:var(--danger);" onclick="delPret(${i})">×</span></td></tr>`).join('');
+  document.getElementById('bat-sub-pret').innerHTML = `
+  <div class="card">
+    <div class="card-title">🏦 Prêts bancaires</div>
+    <table class="tbl"><thead><tr><th>Banque</th><th class="r">Capital</th><th class="r">Mens.</th><th class="r">Taux</th><th class="r">Fin</th><th class="r">CRD</th><th></th></tr></thead>
+    <tbody>${rows||'<tr><td colspan="7" style="text-align:center;color:var(--text3);padding:12px;">Aucun prêt enregistré.</td></tr>'}</tbody></table>
+    <div style="display:flex;flex-wrap:wrap;gap:12px;margin-top:12px;border-top:1px dashed var(--border);padding-top:12px;">
+      ${field('Banque','p-banque','','text')}
+      ${field('Capital emprunté (€)','p-capital','','number')}
+      ${field('Mensualité (€)','p-mens','','number')}
+      ${field('Taux (%)','p-taux','','number')}
+      ${field('Durée / fin','p-fin','','text','ex : 180 mois ou 2034')}
+      ${field('Capital restant dû (€)','p-crd','','number')}
+    </div>
+    <button class="btn btn-p" style="margin-top:10px;" onclick="addPret()">+ Ajouter ce prêt</button>
+  </div>`;
+}
+async function addPret() {
+  const b = batiments.find(x=>x.id===currentBat); if(!b) return;
+  const v=id=>document.getElementById(id).value;
+  if(!v('p-banque') && !v('p-capital')) { alert('Renseigne au moins la banque ou le capital.'); return; }
+  b.prets.push({ banque:v('p-banque'), capital:numOrNull(v('p-capital')), mensualite:numOrNull(v('p-mens')), taux:numOrNull(v('p-taux')), fin:v('p-fin'), crd:numOrNull(v('p-crd')) });
+  await saveBatToDb(b); renderPret(b); recomputeBat();
+}
+async function delPret(i) {
+  const b = batiments.find(x=>x.id===currentBat); if(!b) return;
+  if(!confirm('Supprimer ce prêt ?')) return;
+  b.prets.splice(i,1); await saveBatToDb(b); renderPret(b); recomputeBat();
+}
+
+// ===== LOCATAIRE & BAIL =====
+function renderBail(b) {
+  const l = b.bail;
+  document.getElementById('bat-sub-bail').innerHTML = `
+  <div class="card">
+    <div class="card-title">📄 Locataire & bail commercial</div>
+    <div style="display:flex;flex-wrap:wrap;gap:12px;">
+      ${field('Locataire','b-loc',l.locataire,'text')}
+      ${field('Loyer mensuel HC (€)','b-loyer',l.loyer_mensuel,'number')}
+      ${field('Surface (m²)','b-surf',l.surface,'number')}
+      ${field('Dépôt de garantie (€)','b-depot',l.depot,'number')}
+      ${field('Charges (€/an)','b-charges',l.charges,'number')}
+      ${field('Indexation (ILC/ILAT/ICC)','b-index',l.indexation,'text')}
+      ${field('Date d\'effet du bail','b-effet',l.effet,'text')}
+      ${field('Échéance / fin du bail','b-fin',l.fin,'text')}
+      ${field('Date de révision','b-revision',l.revision,'text')}
+    </div>
+    <textarea id="b-notes" class="sim-in" placeholder="Notes (renouvellement, travaux, clauses particulières…)" style="font-family:var(--font);width:100%;margin-top:10px;min-height:60px;">${l.notes||''}</textarea>
+    <button class="btn btn-p" style="margin-top:10px;" onclick="saveBail()">Enregistrer</button>
+  </div>`;
+}
+async function saveBail() {
+  const b = batiments.find(x=>x.id===currentBat); if(!b) return;
+  const v=id=>document.getElementById(id).value;
+  b.bail = { locataire:v('b-loc'), loyer_mensuel:numOrNull(v('b-loyer')), surface:numOrNull(v('b-surf')),
+    depot:numOrNull(v('b-depot')), charges:numOrNull(v('b-charges')), indexation:v('b-index'),
+    effet:v('b-effet'), fin:v('b-fin'), revision:v('b-revision'), notes:v('b-notes') };
+  await saveBatToDb(b); recomputeBat();
+  document.getElementById('bat-d-sub').textContent = (b.adresse||'') + (b.type_local?' · '+b.type_local:'');
+  flash('bail');
+}
+
+// ===== FACTURATION LOYERS (quittances) =====
+function renderFactu(b) {
+  const rows = (b.loyers||[]).map((f,i)=>`
+    <tr class="${f.paye?'ok':''}"><td>${f.periode||'—'}</td><td class="r">${eurB(f.montant)}</td><td class="r">${f.date_emission||'—'}</td><td class="r">${f.paye?'<span class="tag tag-g">Payé</span>':'<span class="tag tag-w">En attente</span>'}</td><td class="r"><span style="cursor:pointer;color:var(--accent);" onclick="togFactu(${i})">↻</span> <span style="cursor:pointer;color:var(--danger);" onclick="delFactu(${i})">×</span></td></tr>`).join('');
+  const total = (b.loyers||[]).reduce((s,f)=>s+(f.montant||0),0);
+  const encaisse = (b.loyers||[]).filter(f=>f.paye).reduce((s,f)=>s+(f.montant||0),0);
+  document.getElementById('bat-sub-factu').innerHTML = `
+  <div class="card">
+    <div class="card-title">🧾 Facturation des loyers au locataire</div>
+    <div class="g2" style="margin-bottom:10px;">
+      <div class="kpi"><div class="kl">Total facturé</div><div class="kv">${eurB(total)}</div></div>
+      <div class="kpi suc"><div class="kl">Encaissé</div><div class="kv">${eurB(encaisse)}</div><div class="ks">Reste ${eurB(total-encaisse)}</div></div>
+    </div>
+    <table class="tbl"><thead><tr><th>Période</th><th class="r">Montant</th><th class="r">Émise le</th><th class="r">Statut</th><th></th></tr></thead>
+    <tbody>${rows||'<tr><td colspan="5" style="text-align:center;color:var(--text3);padding:12px;">Aucune quittance.</td></tr>'}</tbody></table>
+    <div style="display:flex;flex-wrap:wrap;gap:12px;margin-top:12px;border-top:1px dashed var(--border);padding-top:12px;">
+      ${field('Période','f-periode','','text','ex : Janvier 2025 ou T1 2025')}
+      ${field('Montant (€)','f-montant','','number')}
+      ${field('Date d\'émission','f-date','','text','ex : 01/01/2025')}
+    </div>
+    <button class="btn btn-p" style="margin-top:10px;" onclick="addFactu()">+ Ajouter une quittance</button>
+  </div>`;
+}
+async function addFactu() {
+  const b = batiments.find(x=>x.id===currentBat); if(!b) return;
+  const v=id=>document.getElementById(id).value;
+  if(!v('f-periode') && !v('f-montant')) { alert('Renseigne au moins la période ou le montant.'); return; }
+  b.loyers.push({ periode:v('f-periode'), montant:numOrNull(v('f-montant')), date_emission:v('f-date'), paye:false });
+  await saveBatToDb(b); renderFactu(b);
+}
+async function togFactu(i) {
+  const b = batiments.find(x=>x.id===currentBat); if(!b) return;
+  b.loyers[i].paye = !b.loyers[i].paye; await saveBatToDb(b); renderFactu(b);
+}
+async function delFactu(i) {
+  const b = batiments.find(x=>x.id===currentBat); if(!b) return;
+  if(!confirm('Supprimer cette quittance ?')) return;
+  b.loyers.splice(i,1); await saveBatToDb(b); renderFactu(b);
+}
+
+// ===== TAXE FONCIERE (par année) =====
+function renderTaxe(b) {
+  const rows = (b.taxes||[]).map((t,i)=>`
+    <tr><td>${t.annee||'—'}</td><td class="r">${eurB(t.montant)}</td><td class="r">${t.refacturee?'<span class="tag tag-b">Refacturée locataire</span>':'<span class="tag tag-gr">À ta charge</span>'}</td><td class="r"><span style="cursor:pointer;color:var(--danger);" onclick="delTaxe(${i})">×</span></td></tr>`).join('');
+  document.getElementById('bat-sub-taxe').innerHTML = `
+  <div class="card">
+    <div class="card-title">🏛 Taxe foncière</div>
+    <table class="tbl"><thead><tr><th>Année</th><th class="r">Montant</th><th class="r">Prise en charge</th><th></th></tr></thead>
+    <tbody>${rows||'<tr><td colspan="4" style="text-align:center;color:var(--text3);padding:12px;">Aucune taxe enregistrée.</td></tr>'}</tbody></table>
+    <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;margin-top:12px;border-top:1px dashed var(--border);padding-top:12px;">
+      ${field('Année','t-annee','','number')}
+      ${field('Montant (€)','t-montant','','number')}
+      <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text2);"><input type="checkbox" id="t-refac"> Refacturée au locataire</label>
+    </div>
+    <button class="btn btn-p" style="margin-top:10px;" onclick="addTaxe()">+ Ajouter</button>
+  </div>`;
+}
+async function addTaxe() {
+  const b = batiments.find(x=>x.id===currentBat); if(!b) return;
+  const v=id=>document.getElementById(id).value;
+  if(!v('t-annee') && !v('t-montant')) { alert('Renseigne l\'année ou le montant.'); return; }
+  b.taxes.push({ annee:numOrNull(v('t-annee')), montant:numOrNull(v('t-montant')), refacturee:document.getElementById('t-refac').checked });
+  await saveBatToDb(b); renderTaxe(b);
+}
+async function delTaxe(i) {
+  const b = batiments.find(x=>x.id===currentBat); if(!b) return;
+  if(!confirm('Supprimer cette taxe ?')) return;
+  b.taxes.splice(i,1); await saveBatToDb(b); renderTaxe(b);
+}
+
+// ===== SYNDIC =====
+function renderSyndic(b) {
+  const s = b.syndic;
+  const rows = (s.appels||[]).map((a,i)=>`
+    <tr><td>${a.periode||'—'}</td><td class="r">${eurB(a.montant)}</td><td class="r">${a.date||'—'}</td><td class="r"><span style="cursor:pointer;color:var(--danger);" onclick="delSyndicAppel(${i})">×</span></td></tr>`).join('');
+  const total = (s.appels||[]).reduce((x,a)=>x+(a.montant||0),0);
+  document.getElementById('bat-sub-syndic').innerHTML = `
+  <div class="card">
+    <div class="card-title">👥 Syndic de copropriété</div>
+    <div style="display:flex;flex-wrap:wrap;gap:12px;">
+      ${field('Nom du syndic','s-nom',s.nom,'text')}
+      ${field('Contact','s-contact',s.contact,'text','tél / email')}
+      ${field('Quote-part (millièmes)','s-tantiemes',s.tantiemes,'text')}
+    </div>
+    <button class="btn btn-p" style="margin-top:10px;" onclick="saveSyndic()">Enregistrer les infos syndic</button>
+    <div class="card-title" style="margin-top:18px;">Appels de fonds — total ${eurB(total)}</div>
+    <table class="tbl"><thead><tr><th>Période</th><th class="r">Montant</th><th class="r">Date</th><th></th></tr></thead>
+    <tbody>${rows||'<tr><td colspan="4" style="text-align:center;color:var(--text3);padding:12px;">Aucun appel de fonds.</td></tr>'}</tbody></table>
+    <div style="display:flex;flex-wrap:wrap;gap:12px;margin-top:12px;border-top:1px dashed var(--border);padding-top:12px;">
+      ${field('Période','sa-periode','','text','ex : T1 2025')}
+      ${field('Montant (€)','sa-montant','','number')}
+      ${field('Date','sa-date','','text')}
+    </div>
+    <button class="btn btn-p" style="margin-top:10px;" onclick="addSyndicAppel()">+ Ajouter un appel</button>
+  </div>`;
+}
+async function saveSyndic() {
+  const b = batiments.find(x=>x.id===currentBat); if(!b) return;
+  const v=id=>document.getElementById(id).value;
+  b.syndic.nom=v('s-nom'); b.syndic.contact=v('s-contact'); b.syndic.tantiemes=v('s-tantiemes');
+  await saveBatToDb(b); flash('syndic');
+}
+async function addSyndicAppel() {
+  const b = batiments.find(x=>x.id===currentBat); if(!b) return;
+  const v=id=>document.getElementById(id).value;
+  if(!v('sa-periode') && !v('sa-montant')) { alert('Renseigne la période ou le montant.'); return; }
+  b.syndic.appels.push({ periode:v('sa-periode'), montant:numOrNull(v('sa-montant')), date:v('sa-date') });
+  await saveBatToDb(b); renderSyndic(b);
+}
+async function delSyndicAppel(i) {
+  const b = batiments.find(x=>x.id===currentBat); if(!b) return;
+  if(!confirm('Supprimer cet appel de fonds ?')) return;
+  b.syndic.appels.splice(i,1); await saveBatToDb(b); renderSyndic(b);
+}
+
+// ===== DOCUMENTS (références, pas de fichiers) =====
+function renderDocs(b) {
+  const rows = (b.docs||[]).map((d,i)=>`
+    <tr><td><strong>${d.nom||'—'}</strong></td><td>${d.type||'—'}</td><td class="r">${d.date||'—'}</td><td class="r"><span style="cursor:pointer;color:var(--danger);" onclick="delDoc(${i})">×</span></td></tr>`).join('');
+  document.getElementById('bat-sub-docs').innerHTML = `
+  <div class="card">
+    <div class="card-title">📎 Documents du bâtiment</div>
+    <div class="alert a-b" style="margin-bottom:10px;"><span>💡</span><div>Liste de référence des pièces (acte, bail, taxe, factures…). Pour archiver le fichier, utilise l'onglet « Import fichiers ». Pour que je lise/analyse une pièce, envoie-la dans le chat.</div></div>
+    <table class="tbl"><thead><tr><th>Document</th><th>Type</th><th class="r">Date</th><th></th></tr></thead>
+    <tbody>${rows||'<tr><td colspan="4" style="text-align:center;color:var(--text3);padding:12px;">Aucun document listé.</td></tr>'}</tbody></table>
+    <div style="display:flex;flex-wrap:wrap;gap:12px;margin-top:12px;border-top:1px dashed var(--border);padding-top:12px;">
+      ${field('Nom du document','d-nom','','text','ex : Acte de vente')}
+      ${field('Type','d-type','','text','acte / bail / taxe…')}
+      ${field('Date','d-date','','text')}
+    </div>
+    <button class="btn btn-p" style="margin-top:10px;" onclick="addDoc()">+ Référencer un document</button>
+  </div>`;
+}
+async function addDoc() {
+  const b = batiments.find(x=>x.id===currentBat); if(!b) return;
+  const v=id=>document.getElementById(id).value;
+  if(!v('d-nom')) { alert('Donne un nom au document.'); return; }
+  b.docs.push({ nom:v('d-nom'), type:v('d-type'), date:v('d-date') });
+  await saveBatToDb(b); renderDocs(b);
+}
+async function delDoc(i) {
+  const b = batiments.find(x=>x.id===currentBat); if(!b) return;
+  if(!confirm('Retirer ce document de la liste ?')) return;
+  b.docs.splice(i,1); await saveBatToDb(b); renderDocs(b);
+}
+
+// petit retour visuel "enregistré"
+function flash(key) {
+  const pane = document.getElementById('bat-sub-'+key);
+  if(!pane) return;
+  const btn = pane.querySelector('.btn-p');
+  if(btn){ const t=btn.textContent; btn.textContent='✓ Enregistré'; setTimeout(()=>btn.textContent=t,1200); }
+}
+
 // ── INIT ──
 // Liste des fiches "seed" (PDF/SCI, id négatif) masquées par l'utilisateur.
 // Stockée dans la table "coches" sous des clés "hidden_<id>", pour que la
@@ -965,6 +1525,7 @@ async function init() {
     await loadState();
     await loadFiches();
     await loadBiens();
+    await loadBats();
     document.getElementById('db-dot').classList.remove('off');
     document.getElementById('db-status').textContent = 'Supabase connecté';
   } catch(e) {
@@ -982,7 +1543,7 @@ async function setupTables() {
 }
 
 // ── NAVIGATION ──
-const titles = {dashboard:'Vue d\'ensemble',optim:'Optimisations',sim:'Simulateur','soc-vh':'VH Company','soc-ba':'Burger Avenue','soc-bka':'BK Avenue','soc-bksj':'BK Saint-Jean','soc-fvh':'FVH SARL','soc-sci':'SCI VH Immo',declaration:'Ma déclaration 2026',contrats:'Prévoyance & Retraite','assur-bien':'Habitation & Véhicules','assur-pro':'Entreprise & Pro',checklist:'Checklist documents',import:'Import fichiers'};
+const titles = {dashboard:'Vue d\'ensemble',optim:'Optimisations',sim:'Simulateur','soc-vh':'VH Company','soc-ba':'Burger Avenue','soc-bka':'BK Avenue','soc-bksj':'BK Saint-Jean','soc-fvh':'FVH SARL','soc-sci':'SCI VH Immo',batiments:'Bâtiments',declaration:'Ma déclaration 2026',contrats:'Prévoyance & Retraite','assur-bien':'Habitation & Véhicules','assur-pro':'Entreprise & Pro',checklist:'Checklist documents',import:'Import fichiers'};
 function sw(id, btn) {
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.sb-item').forEach(i => i.classList.remove('active'));
@@ -1397,7 +1958,7 @@ let immoBiens = [];
 let immoLoyers = [];
 
 function openBien() {
-  ['bi-nom','bi-adr','bi-type','bi-dateach','bi-coutach','bi-loc','bi-loyer','bi-bail','bi-banque','bi-mens','bi-pret','bi-finpret','bi-assur','bi-prime'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
+  ['bi-nom','bi-adr','bi-type','bi-dateach','bi-coutach','bi-loc','bi-loyer','bi-bail','bi-surface','bi-depot','bi-charges','bi-index','bi-revision','bi-banque','bi-mens','bi-pret','bi-finpret','bi-assur','bi-prime'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
   document.getElementById('modal-bien').style.display='flex';
 }
 function closeBien(){ document.getElementById('modal-bien').style.display='none'; }
@@ -1409,6 +1970,8 @@ async function saveBien() {
     nom: v('bi-nom')||'Bâtiment sans nom', adresse: v('bi-adr'), type_local: v('bi-type'),
     date_achat: v('bi-dateach'), cout_achat: num('bi-coutach'),
     locataire: v('bi-loc'), loyer_mensuel: num('bi-loyer'), bail_echeance: v('bi-bail'),
+    surface: num('bi-surface'), depot_garantie: num('bi-depot'), charges: num('bi-charges'),
+    indexation: v('bi-index'), revision: v('bi-revision'),
     banque: v('bi-banque'), montant_pret: num('bi-pret'), mensualite: num('bi-mens'), fin_pret: v('bi-finpret'),
     assureur: v('bi-assur'), prime_assurance: num('bi-prime')
   };
@@ -1461,12 +2024,30 @@ function renderBien(b, hist) {
     <div class="soc-num"><div class="nl">Prêt (mens.)</div><div class="nv">${eur(b.mensualite)}</div></div>
     <div class="soc-num"><div class="nl">Assurance</div><div class="nv" style="font-size:13px;">${b.assureur||'—'}${b.prime_assurance?' '+eur(b.prime_assurance):''}</div></div>
   </div>
+  ${leaseDetailBlock(b)}
   <div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);">
     <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px;">Suivi des loyers ${loyerTrend(hist)}</div>
     <div style="font-size:11px;color:var(--text2);font-family:var(--mono);" class="loyer-line">${histTxt}</div>
     ${(b.id&&b.id>0)?`<button class="btn" style="font-size:11px;padding:4px 10px;margin-top:6px;" onclick="addLoyer(${b.id},this)">+ Ajouter le loyer d'une année</button>`:''}
   </div>`;
   wrap.appendChild(d);
+}
+
+// Affiche les détails du bail seulement si au moins un champ est renseigné,
+// pour ne pas alourdir les fiches qui n'ont pas encore ces informations.
+function leaseDetailBlock(b) {
+  const items = [];
+  if(b.surface) items.push(['Surface', b.surface.toLocaleString('fr-FR')+' m²']);
+  if(b.depot_garantie) items.push(['Dépôt de garantie', eur(b.depot_garantie)]);
+  if(b.charges) items.push(['Charges', eur(b.charges)+'/an']);
+  if(b.indexation) items.push(['Indexation', b.indexation]);
+  if(b.revision) items.push(['Révision loyer', b.revision]);
+  if(!items.length) return '';
+  const cells = items.map(([l,v])=>`<div class="soc-num"><div class="nl">${l}</div><div class="nv" style="font-size:13px;">${v}</div></div>`).join('');
+  return `<div style="margin-top:8px;padding-top:8px;border-top:1px dashed var(--border);">
+    <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">Détails du bail</div>
+    <div class="soc-nums" style="flex-wrap:wrap;gap:14px;">${cells}</div>
+  </div>`;
 }
 
 async function addLoyer(id, btn) {
