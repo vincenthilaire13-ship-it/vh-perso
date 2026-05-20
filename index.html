@@ -186,6 +186,8 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:14
   <div class="sb-item" onclick="sw('soc-bksj',this)"><span class="sb-ico">▣</span>BK Saint-Jean<span class="sb-badge" id="b-bksj">—</span></div>
   <div class="sb-item" onclick="sw('soc-fvh',this)"><span class="sb-ico">▣</span>FVH SARL<span class="sb-badge" id="b-fvh">—</span></div>
   <div class="sb-item" onclick="sw('soc-sci',this)"><span class="sb-ico">▣</span>SCI VH Immo<span class="sb-badge" id="b-sci">—</span></div>
+  <div class="sb-section">Patrimoine perso</div>
+  <div class="sb-item" onclick="sw('contrats',this)"><span class="sb-ico">🛡</span>Contrats & Prévoyance<span class="sb-badge g" id="b-contrats">6</span></div>
   <div class="sb-section">Déclaration</div>
   <div class="sb-item" onclick="sw('checklist',this)"><span class="sb-ico">☐</span>Checklist 2026</div>
   <div class="sb-item" onclick="sw('import',this)"><span class="sb-ico">↑</span>Import fichiers<span class="sb-badge" id="b-imp">0</span></div>
@@ -452,6 +454,186 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:14
   <div class="alert a-b"><span>ℹ</span><div><strong>SCI VH Immo</strong> — VH détient 10%. CC actif de VH dans la SCI : 1 379 169€. Loyers personnels estimés 14 400€/an. <button class="btn btn-p" style="margin-left:10px;" onclick="sw('import',null)">Importer →</button></div></div>
 </div>
 
+<!-- CONTRATS & PREVOYANCE -->
+<div id="tab-contrats" class="panel">
+  <div class="alert a-b"><span>🛡</span><div><strong>Tous les contrats prévoyance, retraite et santé au même endroit.</strong> Assuré : Vincent Hilaire (né 13/02/1979) · 2 chemin Vieux, 34690 Fabrègues. Documents 2024-2026.</div></div>
+
+  <!-- KPIs cotisations annuelles -->
+  <div class="g4">
+    <div class="kpi acc"><div class="kl">Cotisations perso / an</div><div class="kv">3 243€</div><div class="ks">GAN retraite + AREAS perso</div></div>
+    <div class="kpi war"><div class="kl">Cotisations via sociétés / an</div><div class="kv">9 700€</div><div class="ks">AREAS 500 + Roederer (Burger Avenue)</div></div>
+    <div class="kpi suc"><div class="kl">Épargne GAN Retraite</div><div class="kv">61 772€</div><div class="ks">Valeur au 01/01/2025</div></div>
+    <div class="kpi"><div class="kl">Contrats actifs</div><div class="kv">6</div><div class="ks">3 organismes · 1 mutuelle</div></div>
+  </div>
+
+  <!-- Note Madelin / PER -->
+  <div class="alert a-w"><span>⚠</span><div><strong>À clarifier avec l'expert-comptable :</strong> les contrats GAN Retraite (150€/mois) et AREAS Multisupport (599,92€/mois via Burger Avenue) sont des contrats <strong>type retraite Madelin/PER</strong>. Vérifier l'articulation avec le levier « PER plafond 115 761€ non utilisé » du tableau de bord — enveloppe Madelin TNS vs PER individuel (cases 6OS).</div></div>
+
+  <!-- RETRAITE -->
+  <div class="card-title">Épargne retraite</div>
+  <div class="soc-grid">
+    <div class="soc-card imp">
+      <div class="soc-hdr"><div><div class="soc-name">GAN Retraite — PEP / Madelin</div><div class="soc-type">N° 113.943.199 J · Gan Prévoyance</div></div><span class="tag tag-g">Actif</span></div>
+      <div class="soc-nums">
+        <div class="soc-num"><div class="nl">Épargne 01/01/2025</div><div class="nv">61 772€</div></div>
+        <div class="soc-num"><div class="nl">Cotisation</div><div class="nv">154,50€/m</div></div>
+        <div class="soc-num"><div class="nl">Retraite au terme</div><div class="nv">6 828€/an</div></div>
+        <div class="soc-num"><div class="nl">Terme</div><div class="nv">01/05/2044</div></div>
+      </div>
+    </div>
+    <div class="soc-card imp">
+      <div class="soc-hdr"><div><div class="soc-name">AREAS Arélia Multisupport</div><div class="soc-type">N° 104910-001 · via Burger Avenue 500</div></div><span class="tag tag-w">Pro</span></div>
+      <div class="soc-nums">
+        <div class="soc-num"><div class="nl">Cotisation</div><div class="nv">599,92€/m</div></div>
+        <div class="soc-num"><div class="nl">Cotis. assoc.</div><div class="nv">6€/an</div></div>
+        <div class="soc-num"><div class="nl">Payeur</div><div class="nv">SARL BA 500</div></div>
+        <div class="soc-num"><div class="nl">Fractionnt</div><div class="nv">Mensuel</div></div>
+      </div>
+    </div>
+    <div class="soc-card imp">
+      <div class="soc-hdr"><div><div class="soc-name">AREAS Multisupport 3</div><div class="soc-type">N° 104910-002 · perso</div></div><span class="tag tag-g">Perso</span></div>
+      <div class="soc-nums">
+        <div class="soc-num"><div class="nl">Cotisation</div><div class="nv">115,77€/m</div></div>
+        <div class="soc-num"><div class="nl">Titulaire</div><div class="nv">V. Hilaire</div></div>
+        <div class="soc-num"><div class="nl">RUM</div><div class="nv">V1612000367</div></div>
+        <div class="soc-num"><div class="nl">Fractionnt</div><div class="nv">Mensuel</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="g2">
+    <!-- GAN détail -->
+    <div class="card">
+      <div class="card-title">GAN Retraite — détail du compte 2024</div>
+      <table class="tbl">
+        <tbody>
+          <tr><td>Épargne au 01/01/2024</td><td class="r">51 126,98€</td></tr>
+          <tr><td>+ Cotisations payées (12 primes)</td><td class="r">9 361,42€</td></tr>
+          <tr><td>− Prélèvements sociaux (17,20%)</td><td class="r" style="color:var(--danger)">136,50€</td></tr>
+          <tr><td>+ Intérêts (2,25% net)</td><td class="r" style="color:var(--success)">1 420,16€</td></tr>
+          <tr class="tot"><td>Épargne au 01/01/2025</td><td class="r"><strong>61 772,06€</strong></td></tr>
+          <tr><td>Valeur de rachat</td><td class="r">61 772,06€</td></tr>
+          <tr><td>Valeur de réduction au terme</td><td class="r">88 463,90€</td></tr>
+        </tbody>
+      </table>
+      <div class="alert a-g" style="margin-top:10px;"><span>✓</span><div>Capital constitutif décès : 67 716€ · Rente réversion : 2 334€/an · Taux min. garanti 2,50%.</div></div>
+    </div>
+    <!-- Echéancier GAN -->
+    <div class="card">
+      <div class="card-title">GAN — échéancier prélèvements</div>
+      <table class="tbl">
+        <thead><tr><th>Période</th><th class="r">Montant/mois</th><th class="r">Total</th></tr></thead>
+        <tbody>
+          <tr><td>Nov 2024 → Avr 2025</td><td class="r">150,00€</td><td class="r">900€</td></tr>
+          <tr class="ok"><td>Mai 2025 → Avr 2026</td><td class="r">154,50€</td><td class="r">1 854€</td></tr>
+        </tbody>
+      </table>
+      <div class="row" style="margin-top:8px;"><span class="rl">Compte débité</span><span class="rv">BPSUD Montpellier · 16607 00254</span></div>
+      <div class="row"><span class="rl">Cotisation perso totale / an</span><span class="rv b">≈ 1 854€</span></div>
+    </div>
+  </div>
+
+  <!-- PREVOYANCE -->
+  <div class="card-title">Prévoyance</div>
+  <div class="card">
+    <div class="card-title">ROEDERER — Prévoyance TNS (Assureur Allianz)</div>
+    <table class="tbl">
+      <thead><tr><th>Garantie</th><th class="r">Assiette PMSS</th><th class="r">Taux</th><th class="r">Cotisation</th></tr></thead>
+      <tbody>
+        <tr><td>Prévoyance — critère collectif</td><td class="r">11 775€</td><td class="r">1,670%</td><td class="r">196,64€</td></tr>
+        <tr><td>Prévoyance — critère collectif</td><td class="r">11 775€</td><td class="r">3,640%</td><td class="r">428,61€</td></tr>
+        <tr class="tot"><td>Total trimestre (01/10→31/12/2025)</td><td class="r"></td><td class="r"></td><td class="r"><strong>625,25€</strong></td></tr>
+      </tbody>
+    </table>
+    <div class="row" style="margin-top:8px;"><span class="rl">Police</span><span class="rv">ST4000880000 · Client 294897</span></div>
+    <div class="row"><span class="rl">Catégorie</span><span class="rv">Travailleur non salarié (TNS)</span></div>
+    <div class="row"><span class="rl">Estimation annuelle (×4 trimestres)</span><span class="rv b">≈ 2 501€</span></div>
+  </div>
+
+  <!-- SANTE -->
+  <div class="card-title">Mutuelle santé</div>
+  <div class="card">
+    <div class="card-title">MUTA SANTÉ — Tiers payant SP Santé</div>
+    <div class="g2">
+      <div>
+        <div class="stitle">Contrat</div>
+        <div class="row"><span class="rl">N° contrat</span><span class="rv">0509000006231000</span></div>
+        <div class="row"><span class="rl">N° AMC</span><span class="rv">68119619</span></div>
+        <div class="row"><span class="rl">Identifiant espace assuré</span><span class="rv">1196258</span></div>
+        <div class="row"><span class="rl">Validité</span><span class="rv">01/01 → 31/12/2025</span></div>
+      </div>
+      <div>
+        <div class="stitle">Bénéficiaires</div>
+        <div class="row"><span class="rl">Vincent Hilaire</span><span class="rv">13/02/1979</span></div>
+        <div class="row"><span class="rl">Émilie Hilaire</span><span class="rv">13/11/1988</span></div>
+        <div class="row"><span class="rl">Florian Hilaire</span><span class="rv">13/12/2004</span></div>
+        <div class="row"><span class="rl">Hugo Hilaire</span><span class="rv">17/03/2017</span></div>
+      </div>
+    </div>
+    <div class="alert a-g" style="margin-top:10px;"><span>✓</span><div>Couverture 100% : pharmacie, médecin, hospitalisation, optique, dentaire, audio. Tiers payant SP Santé actif.</div></div>
+  </div>
+
+  <!-- RECAP -->
+  <div class="card">
+    <div class="card-title">Récapitulatif des cotisations</div>
+    <table class="tbl">
+      <thead><tr><th>Contrat</th><th>Type</th><th>Payeur</th><th class="r">Cotisation/an</th></tr></thead>
+      <tbody>
+        <tr><td>GAN Retraite 113.943.199 J</td><td><span class="tag tag-b">Retraite Madelin</span></td><td>Perso</td><td class="r">≈ 1 854€</td></tr>
+        <tr><td>AREAS Multisupport 3 (104910-002)</td><td><span class="tag tag-b">Épargne/retraite</span></td><td>Perso</td><td class="r">≈ 1 389€</td></tr>
+        <tr><td>AREAS Arélia (104910-001)</td><td><span class="tag tag-w">Retraite pro</span></td><td>Burger Avenue 500</td><td class="r">≈ 7 205€</td></tr>
+        <tr><td>Roederer prévoyance (Allianz)</td><td><span class="tag tag-w">Prévoyance TNS</span></td><td>Burger Avenue 500</td><td class="r">≈ 2 501€</td></tr>
+        <tr><td>Muta Santé (0509000006231000)</td><td><span class="tag tag-g">Mutuelle</span></td><td>—</td><td class="r">n.c.</td></tr>
+        <tr class="tot"><td>Total identifiable</td><td></td><td></td><td class="r"><strong>≈ 12 949€/an</strong></td></tr>
+      </tbody>
+    </table>
+    <div class="alert a-b" style="margin-top:10px;"><span>💡</span><div>Les contrats Madelin/prévoyance payés par la SARL et déductibles peuvent impacter le BNC (cases 5QC/DSCA) — à recouper avec la liasse 2035 de la checklist.</div></div>
+  </div>
+
+  <!-- IMPACT FISCAL -->
+  <div class="card-title">Impact fiscal — comment ça s'intègre dans les impôts</div>
+  <div class="alert a-b"><span>ℹ</span><div>Calcul indicatif basé sur le PASS 2026 (48 060€) et les règles Madelin/PER TNS. <strong>À valider avec l'expert-comptable</strong> — notamment la nature exacte de chaque contrat (Madelin case 6QS vs PER case 6OS) et la réintégration sociale.</div></div>
+
+  <div class="g2">
+    <!-- Calculateur déduction -->
+    <div class="card">
+      <div class="card-title">Calculateur — plafond & déduction retraite</div>
+      <div class="sim-row"><label>Bénéfice imposable TNS (€)</label><input type="number" class="sim-in" id="f-ben" value="51072" oninput="calcFiscal()"></div>
+      <div class="sim-row"><label>Cotisations retraite versées (€)</label><input type="number" class="sim-in" id="f-cot" value="3243" oninput="calcFiscal()"></div>
+      <div class="sim-row"><label>TMI (%)</label><input type="number" class="sim-in" id="f-tmi" value="41" oninput="calcFiscal()"></div>
+      <div id="f-res" style="background:var(--bg);border-radius:var(--r);padding:14px;margin-top:8px;"></div>
+    </div>
+    <!-- Où ça atterrit -->
+    <div class="card">
+      <div class="card-title">Où déclarer — cases concernées</div>
+      <table class="tbl">
+        <tbody>
+          <tr><td>Retraite <strong>Madelin</strong> (anciens contrats)</td><td class="r"><span class="tag tag-b">6QS / 6QT</span></td></tr>
+          <tr><td>Retraite <strong>PER</strong> (nouveaux contrats)</td><td class="r"><span class="tag tag-b">6OS / 6OT</span></td></tr>
+          <tr><td>Cotisations BNC (liasse pro)</td><td class="r"><span class="tag tag-gr">5QC / DSCA</span></td></tr>
+          <tr><td>Si versé par la SARL (charge IS)</td><td class="r"><span class="tag tag-gr">Compte 6411</span></td></tr>
+        </tbody>
+      </table>
+      <div class="alert a-w" style="margin-top:10px;"><span>⚠</span><div><strong>Madelin ≠ PER :</strong> le levier « PER plafond 115 761€ » du dashboard vise la case 6OS. Vérifier si le GAN/AREAS sont en 6QS (Madelin) — enveloppe en partie distincte et déjà partiellement consommée par tes versements actuels.</div></div>
+      <button class="btn btn-p" style="margin-top:10px;" onclick="sw('sim',null)">→ Ouvrir le simulateur IR</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Synthèse — déductible vs non déductible</div>
+    <table class="tbl">
+      <thead><tr><th>Contrat</th><th class="r">Cotis./an</th><th class="r">Déductible IR ?</th><th class="r">Réint. sociale ?</th></tr></thead>
+      <tbody>
+        <tr><td>GAN Retraite (Madelin)</td><td class="r">1 854€</td><td class="r"><span class="tag tag-g">Oui (plafond)</span></td><td class="r"><span class="tag tag-w">À vérifier</span></td></tr>
+        <tr><td>AREAS Arélia / Multisupport 3</td><td class="r">8 594€</td><td class="r"><span class="tag tag-g">Oui (plafond)</span></td><td class="r"><span class="tag tag-w">À vérifier</span></td></tr>
+        <tr><td>Roederer prévoyance TNS</td><td class="r">2 501€</td><td class="r"><span class="tag tag-g">Oui (plafond P/S)</span></td><td class="r"><span class="tag tag-gr">N/A</span></td></tr>
+        <tr><td>Muta Santé (mutuelle)</td><td class="r">n.c.</td><td class="r"><span class="tag tag-w">Si Madelin santé</span></td><td class="r"><span class="tag tag-gr">N/A</span></td></tr>
+      </tbody>
+    </table>
+    <div class="alert a-g" style="margin-top:10px;"><span>✓</span><div>Plafond prévoyance/santé Madelin distinct du plafond retraite : 3,75% du bénéfice + 7% du PASS, plafonné. Les deux enveloppes se cumulent.</div></div>
+  </div>
+</div>
+
 <!-- CHECKLIST -->
 <div id="tab-checklist" class="panel">
   <div class="alert a-b"><span>📅</span><div>Déclaration 2026 (revenus 2025) — Département 34, date limite fin mai/juin 2026.</div></div>
@@ -466,8 +648,10 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:14
     <div class="stitle">Crédits d'impôt</div>
     <div class="ck"><div class="ckbox" data-key="ck5" onclick="togCk(this)"></div><div class="cktxt"><div class="ckt">Attestation CESU — Mme Renault Sophie</div><div class="cks">Total dépenses aide à domicile 2025 (7DB). Plafond 12 000€.</div></div><span class="tag tag-r">Critique</span></div>
     <div class="ck"><div class="ckbox" data-key="ck6" onclick="togCk(this)"></div><div class="cktxt"><div class="ckt">Avance immédiate crédit domicile 2025 (7HB)</div><div class="cks">Montant perçu via CESU avance immédiate. Sur espace impots.gouv.fr.</div></div><span class="tag tag-r">Critique</span></div>
-    <div class="stitle">PER — si versements effectués</div>
-    <div class="ck"><div class="ckbox" data-key="ck7" onclick="togCk(this)"></div><div class="cktxt"><div class="ckt">Attestation PER Vincent (6OS) — plafond 115 761€</div><div class="cks">Attestation annuelle du gestionnaire PER.</div></div><span class="tag tag-w">Si applicable</span></div>
+    <div class="stitle">Retraite / prévoyance — attestations annuelles</div>
+    <div class="ck"><div class="ckbox" data-key="ck7" onclick="togCk(this)"></div><div class="cktxt"><div class="ckt">Attestation PER Vincent (6OS) — plafond 115 761€</div><div class="cks">Attestation annuelle du gestionnaire PER, si versement PER individuel effectué.</div></div><span class="tag tag-w">Si applicable</span></div>
+    <div class="ck"><div class="ckbox" data-key="ck11" onclick="togCk(this)"></div><div class="cktxt"><div class="ckt">Attestations Madelin (6QS) — GAN Retraite + AREAS</div><div class="cks">Cotisations retraite Madelin déductibles. Vérifier case 6QS (≠ 6OS du PER). Voir section Contrats & Prévoyance.</div></div><span class="tag tag-w">Si applicable</span></div>
+    <div class="ck"><div class="ckbox" data-key="ck12" onclick="togCk(this)"></div><div class="cktxt"><div class="ckt">Attestation prévoyance Roederer/Allianz TNS</div><div class="cks">Cotisations prévoyance Madelin déductibles (plafond 3,75% + 7% PASS).</div></div><span class="tag tag-w">Si applicable</span></div>
     <div class="stitle">Divers</div>
     <div class="ck"><div class="ckbox" data-key="ck8" onclick="togCk(this)"></div><div class="cktxt"><div class="ckt">Formulaire 3916 — compte bancaire étranger</div><div class="cks">Case 8UU cochée en 2024. Déclaration obligatoire.</div></div><span class="tag tag-r">Obligatoire</span></div>
     <div class="ck"><div class="ckbox" data-key="ck9" onclick="togCk(this)"></div><div class="cktxt"><div class="ckt">Revenus fonciers — quittances loyer 2025</div><div class="cks">Micro-foncier si &lt; 15 000€ (case 4BE). Sinon régime réel 2044.</div></div><span class="tag tag-w">Important</span></div>
@@ -523,6 +707,7 @@ async function init() {
     document.getElementById('db-status').textContent = 'Hors ligne';
   }
   sim();
+  calcFiscal();
 }
 
 async function setupTables() {
@@ -532,7 +717,7 @@ async function setupTables() {
 }
 
 // ── NAVIGATION ──
-const titles = {dashboard:'Vue d\'ensemble',optim:'Optimisations',sim:'Simulateur','soc-vh':'VH Company','soc-ba':'Burger Avenue','soc-bka':'BK Avenue','soc-bksj':'BK Saint-Jean','soc-fvh':'FVH SARL','soc-sci':'SCI VH Immo',checklist:'Checklist 2026',import:'Import fichiers'};
+const titles = {dashboard:'Vue d\'ensemble',optim:'Optimisations',sim:'Simulateur','soc-vh':'VH Company','soc-ba':'Burger Avenue','soc-bka':'BK Avenue','soc-bksj':'BK Saint-Jean','soc-fvh':'FVH SARL','soc-sci':'SCI VH Immo',contrats:'Contrats & Prévoyance',checklist:'Checklist 2026',import:'Import fichiers'};
 function sw(id, btn) {
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.sb-item').forEach(i => i.classList.remove('active'));
@@ -645,6 +830,28 @@ function sim() {
     <div style="font-size:12px;color:var(--text2);margin-top:2px;">IR ≈ ${fr(irO)} · Flat tax div. ≈ ${fr(pfu)}</div>
   </div>`:'<div style="display:flex;align-items:center;font-size:13px;color:var(--text3);">← Ajustez les curseurs</div>'}
 </div>`;
+}
+
+function calcFiscal() {
+  const ben = +document.getElementById('f-ben').value||0;
+  const cot = +document.getElementById('f-cot').value||0;
+  const tmi = (+document.getElementById('f-tmi').value||0)/100;
+  const PASS = 48060; // PASS 2026
+  // Plafond Madelin/PER TNS retraite : 10% du bénéfice (max 8 PASS) + 15% de la tranche 1-8 PASS
+  const base8 = Math.min(ben, 8*PASS);
+  const tranche = Math.max(0, Math.min(ben, 8*PASS) - PASS);
+  const plafFormule = base8*0.10 + tranche*0.15;
+  const plancher = PASS*0.10; // 4 806€
+  const plafond = Math.max(plafFormule, plancher);
+  const deductible = Math.min(cot, plafond);
+  const eco = deductible * tmi;
+  const depasse = cot > plafond;
+  document.getElementById('f-res').innerHTML = `
+<div class="row"><span class="rl">Plafond de déduction retraite</span><span class="rv b">${fr(plafond)}</span></div>
+<div class="row"><span class="rl">Cotisations versées</span><span class="rv">${fr(cot)}</span></div>
+<div class="row"><span class="rl">Montant réellement déductible</span><span class="rv g">${fr(deductible)}</span></div>
+<div class="row"><span class="rl">Économie d'impôt estimée</span><span class="rv g"><strong>${fr(eco)}</strong></span></div>
+${depasse?`<div style="font-size:11px;color:var(--warn);margin-top:6px;">⚠ Versements > plafond : ${fr(cot-plafond)} non déductibles cette année.</div>`:`<div style="font-size:11px;color:var(--success);margin-top:6px;">✓ Marge restante : ${fr(plafond-cot)} (verser plus = déduire plus).</div>`}`;
 }
 
 function baremeIR(rev, parts) {
