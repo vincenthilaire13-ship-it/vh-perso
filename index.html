@@ -159,6 +159,11 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:14
 .sim-row input[type=range]{flex:1;}
 .so{font-size:12px;font-weight:600;min-width:95px;text-align:right;font-family:var(--mono);}
 .sim-in{width:115px;padding:6px 9px;border:1px solid var(--border2);border-radius:7px;background:var(--surface);color:var(--text);font-size:12px;font-family:var(--mono);}
+.sim-in.mini{width:120px;text-align:right;}
+.sci-cc-row{display:flex;align-items:center;gap:8px;padding:5px 0;}
+.sci-cc-row input.nm{flex:1;font-family:var(--font);}
+.sci-cc-row input.mt{width:120px;text-align:right;}
+.sci-cc-row .del{cursor:pointer;color:var(--text3);font-size:16px;padding:0 4px;}
 
 /* STATUS */
 .status-bar{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text3);padding:6px 0;}
@@ -459,25 +464,67 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:14
   <div class="alert a-r"><span>⚠</span><div><strong>FVH SARL</strong> — Déficitaire (−2 104€). Pas de dividendes. CC débiteur dans VH : 101 000€. <button class="btn btn-p" style="margin-left:10px;" onclick="sw('import',null)">Importer →</button></div></div>
 </div>
 <div id="tab-soc-sci" class="panel">
-  <div class="alert a-b"><span>🏢</span><div><strong>SCI VH Immo</strong> — VH détient 10%. CC actif de VH : 1 379 169€. Gère ici chaque bâtiment : achat, bail, prêt, assurance et suivi des loyers.</div></div>
+  <div class="alert a-b"><span>🏢</span><div><strong>SCI VH Immo</strong> — VH détient 10%. Cette section regroupe le <strong>financier de la société</strong> : capital, comptes courants, résultat et bilan. Les bâtiments (notaire, banque, syndic, bail, loyers, taxe foncière) se gèrent dans la section <strong>Bâtiments</strong>.</div></div>
 
   <div class="g4">
-    <div class="kpi acc"><div class="kl">Bâtiments</div><div class="kv" id="immo-count">0</div><div class="ks">Dans le portefeuille</div></div>
-    <div class="kpi suc"><div class="kl">Loyers annuels</div><div class="kv" id="immo-loyers">0€</div><div class="ks">Total déclaré</div></div>
-    <div class="kpi"><div class="kl">Valeur d'achat</div><div class="kv" id="immo-achat">0€</div><div class="ks">Cumul</div></div>
-    <div class="kpi war"><div class="kl">Mensualités prêts</div><div class="kv" id="immo-pret">0€</div><div class="ks">Total / mois</div></div>
+    <div class="kpi acc"><div class="kl">Capital social</div><div class="kv" id="sci-k-capital">—</div><div class="ks">SCI VH Immo</div></div>
+    <div class="kpi suc"><div class="kl">CC associé (VH)</div><div class="kv" id="sci-k-cc">—</div><div class="ks">Compte courant</div></div>
+    <div class="kpi" id="sci-k-res-wrap"><div class="kl">Résultat</div><div class="kv" id="sci-k-resultat">—</div><div class="ks" id="sci-k-res-ex">dernier exercice</div></div>
+    <div class="kpi war"><div class="kl">Total bilan</div><div class="kv" id="sci-k-bilan">—</div><div class="ks" id="sci-k-bil-eq">—</div></div>
   </div>
 
-  <div style="display:flex;justify-content:space-between;align-items:center;margin:14px 0 10px;">
-    <div class="card-title" style="margin:0;">Les bâtiments de la SCI</div>
-    <div style="display:flex;align-items:center;gap:12px;">
-      <button class="btn btn-p" onclick="openBien()">+ Ajouter un bâtiment</button>
-      <span style="font-size:11px;color:var(--text3);cursor:pointer;text-decoration:underline;" onclick="restoreHidden()">Restaurer les supprimés</span>
+  <!-- Sélecteur d'exercice -->
+  <div class="card" style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+    <div style="display:flex;align-items:center;gap:10px;">
+      <span style="font-size:13px;font-weight:600;">Exercice</span>
+      <select id="sci-ex-select" class="sim-in" style="font-family:var(--font);width:auto;" onchange="renderSciFin()"></select>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <button class="btn" onclick="addSciExercice()">+ Nouvel exercice</button>
+      <button class="btn btn-p" onclick="saveSciFin()">Enregistrer</button>
     </div>
   </div>
 
-  <div id="immo-list"></div>
-  <div id="immo-empty" class="card" style="text-align:center;color:var(--text3);padding:24px;">Aucun bâtiment encore. Clique « + Ajouter un bâtiment » pour commencer, ou envoie-moi un bail dans le chat pour que je le remplisse.</div>
+  <!-- Capital & comptes courants -->
+  <div class="card">
+    <div class="card-title">Capital & comptes courants associés</div>
+    <div class="g2">
+      <div><div class="stitle">Capital social</div><input id="sf-capital" type="number" class="sim-in" placeholder="€" oninput="liveSciKpis()"></div>
+      <div><div class="stitle">Résultat de l'exercice</div><input id="sf-resultat" type="number" class="sim-in" placeholder="€ (bénéfice + / perte −)" oninput="liveSciKpis()"></div>
+    </div>
+    <div class="stitle">Comptes courants d'associés</div>
+    <div id="sf-cc-list"></div>
+    <button class="btn" style="font-size:12px;padding:5px 12px;margin-top:6px;" onclick="addSciCc()">+ Ajouter un associé</button>
+  </div>
+
+  <!-- Bilan simplifié (lignes clés) -->
+  <div class="card">
+    <div class="card-title">Bilan (lignes clés)</div>
+    <div class="g2">
+      <div>
+        <div class="stitle">ACTIF</div>
+        <div class="row"><span class="rl">Total actif</span><input id="sf-a-total" type="number" class="sim-in mini" placeholder="€" oninput="liveSciKpis()"></div>
+        <div class="row"><span class="rl">dont trésorerie</span><input id="sf-a-treso" type="number" class="sim-in mini" placeholder="€" oninput="liveSciKpis()"></div>
+      </div>
+      <div>
+        <div class="stitle">PASSIF</div>
+        <div class="row"><span class="rl">Capitaux propres</span><input id="sf-p-cp" type="number" class="sim-in mini" placeholder="€" oninput="liveSciKpis()"></div>
+        <div class="row"><span class="rl">Emprunts (CRD)</span><input id="sf-p-emp" type="number" class="sim-in mini" placeholder="€" oninput="liveSciKpis()"></div>
+        <div class="row"><span class="rl">Comptes courants + dettes</span><input id="sf-p-det" type="number" class="sim-in mini" placeholder="€" oninput="liveSciKpis()"></div>
+        <div class="row tot"><span class="rl"><strong>Total passif</strong></span><span class="rv" id="sf-tot-passif">0 €</span></div>
+      </div>
+    </div>
+    <div id="sf-equilibre" class="alert a-g" style="margin-top:10px;"><span>✓</span><div>Bilan équilibré.</div></div>
+    <div style="font-size:11px;color:var(--text3);margin-top:4px;">Saisie rapide : indique le total actif et le détail du passif. Envoie-moi un bilan dans le chat et je remplis l'exercice.</div>
+  </div>
+
+  <div class="card" style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
+    <div>
+      <div style="font-weight:600;font-size:13px;">Les bâtiments de la SCI</div>
+      <div style="font-size:12px;color:var(--text2);">Acquisition, prêt, bail, loyers, taxe foncière et syndic — dossier complet par bien.</div>
+    </div>
+    <button class="btn btn-p" onclick="document.querySelector('.sb-item[onclick*=batiments]').click()">Ouvrir les bâtiments →</button>
+  </div>
 </div>
 
 <!-- MODAL AJOUT BATIMENT -->
@@ -861,6 +908,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:14
       <div class="card-title" style="margin:0;">Mes bâtiments</div>
       <div style="display:flex;align-items:center;gap:12px;">
         <button class="btn btn-p" onclick="openBat()">+ Nouveau bâtiment</button>
+        <span style="font-size:11px;color:var(--text3);cursor:pointer;text-decoration:underline;" onclick="resyncAuchan()">Resynchroniser Auchan</span>
         <span style="font-size:11px;color:var(--text3);cursor:pointer;text-decoration:underline;" onclick="restoreHidden()">Restaurer les supprimés</span>
       </div>
     </div>
@@ -1065,6 +1113,32 @@ async function loadBats() {
     if(data) batiments = data.map(normalizeBat);
   } catch(e) {}
   renderBatList();
+}
+
+// Remet à jour le dossier AUCHAN avec les valeurs vérifiées sur les documents
+// (acte notarié, tableau d'amortissement, bail, factures). Ne touche qu'AUCHAN.
+async function resyncAuchan() {
+  const ref = {
+    adresse:'Route de Carnon, CC Méditerranée, Pérols (34470)',
+    type_local:'Local commercial (galerie Auchan) · lots 77-82',
+    acq:{ date:'25/06/2019', prix:234500, notaire:'Notaires Foch (Me Capela-Laborde)', etude:'Montpellier', ref:'Acte du 13/06/2019', valeur:215000, notes:'Prix de vente 215 000€ ; programme financé 234 500€ (apport 3 000€). Lots 77 à 82, résidence Plein Sud.' },
+    bail:{ locataire:'MFK VAP (ex-Happe SW)', loyer_mensuel:2200, surface:86.1, depot:7500, charges:7234, indexation:'ILC (base T4 2018 : 114,06)', effet:'25/06/2019', fin:'24/06/2028', revision:'25/06', notes:'Bail 9 ans. Transfert Happe SW → MFK VAP au 01/09/2023. Caution MVM 270 000€.' },
+    pret:{ banque:'Banque Populaire du Sud', capital:231500, mensualite:1434.94, taux:1.48, fin:'12/06/2034', crd:null }
+  };
+  let bat = batiments.find(b => (b.nom||'').toUpperCase().includes('AUCHAN'));
+  if(!bat) { alert('Aucun bâtiment « Auchan » trouvé dans la liste.'); return; }
+  if(!confirm('Mettre à jour le dossier « '+bat.nom+' » avec les valeurs des documents (notaire, prêt, bail) ?\n\nCela écrase les champs concernés mais conserve loyers, taxes, syndic et documents déjà saisis.')) return;
+  bat.adresse = ref.adresse;
+  bat.type_local = ref.type_local;
+  bat.acq = Object.assign({}, bat.acq, ref.acq);
+  bat.bail = Object.assign({}, bat.bail, ref.bail);
+  // Met à jour le 1er prêt s'il existe, sinon l'ajoute
+  bat.prets = bat.prets || [];
+  if(bat.prets.length) bat.prets[0] = Object.assign({}, bat.prets[0], ref.pret);
+  else bat.prets = [ref.pret];
+  await saveBatToDb(bat);
+  renderBatList();
+  alert('Dossier « '+bat.nom+' » resynchronisé avec les documents. ✓');
 }
 
 // Drapeau d'amorçage stocké dans la table "coches"
@@ -1466,35 +1540,163 @@ async function delSyndicAppel(i) {
   b.syndic.appels.splice(i,1); await saveBatToDb(b); renderSyndic(b);
 }
 
-// ===== DOCUMENTS (références, pas de fichiers) =====
+// ===== DOCUMENTS (vrais fichiers stockés sur Supabase Storage) =====
+const DOC_BUCKET = 'documents';
+const DOC_CATS = ['Acte / notaire','Prêt bancaire','Bail','Taxe foncière','Syndic','Facture loyer','Assurance','Autre'];
+
+// ╔══════════════════════════════════════════════════════════════════════╗
+// ║  TOKEN DROPBOX — À REMPLACER ICI quand il expire.                      ║
+// ║  Génère-le sur dropbox.com/developers/apps → ton app → Settings →      ║
+// ║  "Generated access token" → Generate, puis colle-le ci-dessous.       ║
+// ║  ⚠ Ce token est visible dans le code source de la page.               ║
+// ║  Laisse '' (vide) pour désactiver l'upload Dropbox et n'utiliser       ║
+// ║  que Supabase + le bouton Télécharger.                                 ║
+// ╚══════════════════════════════════════════════════════════════════════╝
+const DROPBOX_TOKEN = '';
+const DROPBOX_FOLDER = '/Fiscal_Hub/Batiments'; // dossier racine dans ton Dropbox
+
 function renderDocs(b) {
-  const rows = (b.docs||[]).map((d,i)=>`
-    <tr><td><strong>${d.nom||'—'}</strong></td><td>${d.type||'—'}</td><td class="r">${d.date||'—'}</td><td class="r"><span style="cursor:pointer;color:var(--danger);" onclick="delDoc(${i})">×</span></td></tr>`).join('');
+  const dbxOn = DROPBOX_TOKEN && DROPBOX_TOKEN.length > 20;
+  const rows = (b.docs||[]).map((d,i)=>{
+    const ouvrir = d.url
+      ? `<a href="${d.url}" target="_blank" rel="noopener" class="btn" style="font-size:11px;padding:3px 9px;">Ouvrir</a>`
+      : `<span style="font-size:11px;color:var(--text3);">réf. seule</span>`;
+    const tele = d.url
+      ? `<a href="${d.url}" download="${(d.nom||'document').replace(/"/g,'')}" class="btn" style="font-size:11px;padding:3px 9px;">Télécharger</a>`
+      : '';
+    const dbxBadge = d.dropbox
+      ? `<span class="tag tag-g" style="font-size:10px;" title="Copié dans Dropbox">Dropbox ✓</span>`
+      : (dbxOn ? `<button class="btn" style="font-size:11px;padding:3px 9px;" onclick="sendToDropbox(${i})">→ Dropbox</button>` : '');
+    return `<tr>
+      <td><strong>${d.nom||'—'}</strong></td>
+      <td><span class="tag tag-gr">${d.type||'Autre'}</span></td>
+      <td class="r">${d.date||'—'}</td>
+      <td class="r" style="white-space:nowrap;">${ouvrir} ${tele} ${dbxBadge} <span style="cursor:pointer;color:var(--danger);padding:0 4px;" onclick="delDoc(${i})">×</span></td>
+    </tr>`;
+  }).join('');
+  const opts = DOC_CATS.map(c=>`<option value="${c}">${c}</option>`).join('');
+  const dbxNote = dbxOn
+    ? `Le bouton <strong>→ Dropbox</strong> copie aussi le fichier dans ton Dropbox (${DROPBOX_FOLDER}).`
+    : `Pour retrouver un PDF dans ton Dropbox : clique <strong>Télécharger</strong> puis enregistre-le dans Dropbox (ou colle le token Dropbox dans le code pour l'envoi automatique).`;
   document.getElementById('bat-sub-docs').innerHTML = `
   <div class="card">
     <div class="card-title">📎 Documents du bâtiment</div>
-    <div class="alert a-b" style="margin-bottom:10px;"><span>💡</span><div>Liste de référence des pièces (acte, bail, taxe, factures…). Pour archiver le fichier, utilise l'onglet « Import fichiers ». Pour que je lise/analyse une pièce, envoie-la dans le chat.</div></div>
-    <table class="tbl"><thead><tr><th>Document</th><th>Type</th><th class="r">Date</th><th></th></tr></thead>
-    <tbody>${rows||'<tr><td colspan="4" style="text-align:center;color:var(--text3);padding:12px;">Aucun document listé.</td></tr>'}</tbody></table>
-    <div style="display:flex;flex-wrap:wrap;gap:12px;margin-top:12px;border-top:1px dashed var(--border);padding-top:12px;">
-      ${field('Nom du document','d-nom','','text','ex : Acte de vente')}
-      ${field('Type','d-type','','text','acte / bail / taxe…')}
-      ${field('Date','d-date','','text')}
+    <div class="alert a-b" style="margin-bottom:10px;"><span>💡</span><div>Ajoute un PDF : il est <strong>rangé</strong> dans ce bâtiment, classé par catégorie, et <strong>ouvrable</strong> ici. ${dbxNote} Pour que je <strong>lise</strong> une pièce et remplisse les champs, envoie-la-moi dans le chat.</div></div>
+    <table class="tbl"><thead><tr><th>Document</th><th>Catégorie</th><th class="r">Date</th><th></th></tr></thead>
+    <tbody>${rows||'<tr><td colspan="4" style="text-align:center;color:var(--text3);padding:12px;">Aucun document. Ajoute un PDF ci-dessous.</td></tr>'}</tbody></table>
+    <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;margin-top:12px;border-top:1px dashed var(--border);padding-top:12px;">
+      <div style="display:flex;flex-direction:column;gap:3px;flex:1;min-width:160px;">
+        <label style="font-size:11px;color:var(--text3);">Catégorie</label>
+        <select id="d-cat" class="sim-in" style="font-family:var(--font);width:100%;">${opts}</select>
+      </div>
+      ${field('Nom (optionnel)','d-nom','','text','sinon nom du fichier')}
+      <div style="display:flex;flex-direction:column;gap:3px;">
+        <label style="font-size:11px;color:var(--text3);">Fichier PDF</label>
+        <input type="file" id="d-file" accept=".pdf,.jpg,.jpeg,.png" style="font-size:12px;">
+      </div>
     </div>
-    <button class="btn btn-p" style="margin-top:10px;" onclick="addDoc()">+ Référencer un document</button>
+    <div style="display:flex;align-items:center;gap:12px;margin-top:10px;">
+      <button class="btn btn-p" onclick="uploadBatDoc()">+ Ajouter le document</button>
+      <span id="d-status" style="font-size:12px;color:var(--text3);"></span>
+    </div>
   </div>`;
 }
-async function addDoc() {
+
+async function uploadBatDoc() {
   const b = batiments.find(x=>x.id===currentBat); if(!b) return;
-  const v=id=>document.getElementById(id).value;
-  if(!v('d-nom')) { alert('Donne un nom au document.'); return; }
-  b.docs.push({ nom:v('d-nom'), type:v('d-type'), date:v('d-date') });
-  await saveBatToDb(b); renderDocs(b);
+  const fileEl = document.getElementById('d-file');
+  const status = document.getElementById('d-status');
+  const f = fileEl && fileEl.files && fileEl.files[0];
+  if(!f) { alert('Choisis d\u2019abord un fichier PDF.'); return; }
+  const cat = document.getElementById('d-cat').value || 'Autre';
+  const nom = document.getElementById('d-nom').value.trim() || f.name;
+  status.textContent = 'Envoi en cours…';
+  // Chemin de rangement : batiment_<id>/<categorie>/<horodatage>_<nom>
+  const safe = f.name.replace(/[^a-zA-Z0-9._-]/g,'_');
+  const path = `batiment_${b.id}/${cat.replace(/[^a-zA-Z0-9]/g,'_')}/${Date.now()}_${safe}`;
+  let publicUrl = '';
+  try {
+    const up = await sb.storage.from(DOC_BUCKET).upload(path, f, {upsert:false});
+    if(up.error) throw up.error;
+    const {data:pub} = sb.storage.from(DOC_BUCKET).getPublicUrl(path);
+    publicUrl = pub ? pub.publicUrl : '';
+  } catch(e) {
+    // Dégradation gracieuse : on explique au lieu de planter
+    const msg = (e && e.message) ? e.message : '';
+    if(/bucket|not found|404/i.test(msg)) {
+      status.innerHTML = '<span style="color:var(--danger);">Le bucket « '+DOC_BUCKET+' » n\u2019existe pas. Crée-le dans Supabase → Storage → New bucket (nom : '+DOC_BUCKET+', public), puis réessaie.</span>';
+    } else {
+      status.innerHTML = '<span style="color:var(--danger);">Échec de l\u2019envoi : '+msg+'</span>';
+    }
+    return;
+  }
+  b.docs = b.docs || [];
+  const doc = { nom:nom, type:cat, date:new Date().toLocaleDateString('fr-FR'), path:path, url:publicUrl };
+  // Copie automatique vers Dropbox si un token est configuré (on réutilise le fichier en main)
+  if(DROPBOX_TOKEN && DROPBOX_TOKEN.length > 20) {
+    try { await pushDropbox(f, b.nom, cat, nom); doc.dropbox = true; status.textContent = 'Rangé sur Supabase + Dropbox ✓'; }
+    catch(e) { status.innerHTML = '<span style="color:var(--warn);">Rangé sur Supabase ✓ — Dropbox a échoué ('+((e&&e.message)||'')+'). Le token a peut-être expiré.</span>'; }
+  } else {
+    status.textContent = 'Rangé ✓';
+  }
+  b.docs.push(doc);
+  await saveBatToDb(b);
+  renderDocs(b);
 }
+
 async function delDoc(i) {
   const b = batiments.find(x=>x.id===currentBat); if(!b) return;
-  if(!confirm('Retirer ce document de la liste ?')) return;
-  b.docs.splice(i,1); await saveBatToDb(b); renderDocs(b);
+  const d = b.docs[i];
+  if(!confirm('Supprimer « '+(d&&d.nom||'ce document')+' » ?\n(Le fichier sera retiré du rangement, mais pas définitivement effacé du stockage.)')) return;
+  // On retire la référence. On NE supprime PAS le binaire du stockage
+  // (suppression permanente = action sensible laissée à l'utilisateur côté Supabase).
+  b.docs.splice(i,1);
+  await saveBatToDb(b);
+  renderDocs(b);
+}
+
+// Pousse un fichier (blob) vers Dropbox. Renvoie true si OK.
+// Le chemin Dropbox reflète le rangement : /Fiscal_Hub/Batiments/<bâtiment>/<catégorie>/<nom>
+async function pushDropbox(blob, batNom, cat, fileName) {
+  if(!(DROPBOX_TOKEN && DROPBOX_TOKEN.length > 20)) return false;
+  const clean = s => (s||'').replace(/[\/\\:*?"<>|]/g,'_');
+  const path = `${DROPBOX_FOLDER}/${clean(batNom)}/${clean(cat)}/${clean(fileName)}`;
+  const res = await fetch('https://content.dropboxapi.com/2/files/upload', {
+    method:'POST',
+    headers:{
+      'Authorization':'Bearer '+DROPBOX_TOKEN,
+      'Dropbox-API-Arg': JSON.stringify({path:path, mode:'add', autorename:true, mute:false}),
+      'Content-Type':'application/octet-stream'
+    },
+    body: blob
+  });
+  if(!res.ok) {
+    let detail=''; try{ detail=(await res.json()).error_summary||''; }catch(e){}
+    throw new Error(detail || ('HTTP '+res.status));
+  }
+  return true;
+}
+
+// Bouton « → Dropbox » : re-télécharge le fichier depuis Supabase puis l'envoie à Dropbox.
+async function sendToDropbox(i) {
+  const b = batiments.find(x=>x.id===currentBat); if(!b) return;
+  const d = b.docs[i]; if(!d || !d.url) { alert('Aucun fichier à envoyer.'); return; }
+  const status = document.getElementById('d-status');
+  if(status) status.textContent = 'Copie vers Dropbox…';
+  try {
+    const blob = await (await fetch(d.url)).blob();
+    await pushDropbox(blob, b.nom, d.type, (d.nom||'document'));
+    d.dropbox = true;
+    await saveBatToDb(b);
+    renderDocs(b);
+  } catch(e) {
+    const msg = (e && e.message) ? e.message : '';
+    if(/expired_access_token|invalid_access_token|401/i.test(msg)) {
+      if(status) status.innerHTML = '<span style="color:var(--danger);">Token Dropbox expiré. Régénère-le sur dropbox.com/developers/apps et remplace DROPBOX_TOKEN dans le code.</span>';
+    } else {
+      if(status) status.innerHTML = '<span style="color:var(--danger);">Échec Dropbox : '+msg+'</span>';
+    }
+  }
 }
 
 // petit retour visuel "enregistré"
@@ -1526,6 +1728,7 @@ async function init() {
     await loadFiches();
     await loadBiens();
     await loadBats();
+    await loadSciFin();
     document.getElementById('db-dot').classList.remove('off');
     document.getElementById('db-status').textContent = 'Supabase connecté';
   } catch(e) {
@@ -2100,7 +2303,7 @@ function recomputeImmo() {
 
 // Bâtiments réels de la SCI (données du fichier Excel) — affichés en dur
 const BIENS_SEED = [
-  {id:-1, nom:'AUCHAN Galerie', adresse:'Route de Carnon, CC Méditerranée, Pérols (34470)', type_local:'Local commercial (galerie Auchan) · lots 77-82', date_achat:'25/06/2019', cout_achat:234500, locataire:'MFK VAP (ex-Happe SW)', loyer_mensuel:2200, bail_echeance:'24/06/2028', surface:86.1, depot_garantie:7500, charges:7234, indexation:'ILC (base T4 2018 : 114,06)', revision:'25/06', banque:'—', montant_pret:231500, mensualite:1435, fin_pret:'180 mois', assureur:'—', prime_assurance:null,
+  {id:-1, nom:'AUCHAN Galerie', adresse:'Route de Carnon, CC Méditerranée, Pérols (34470)', type_local:'Local commercial (galerie Auchan) · lots 77-82', date_achat:'25/06/2019', cout_achat:234500, locataire:'MFK VAP (ex-Happe SW)', loyer_mensuel:2200, bail_echeance:'24/06/2028', surface:86.1, depot_garantie:7500, charges:7234, indexation:'ILC (base T4 2018 : 114,06)', revision:'25/06', banque:'Banque Populaire du Sud (1,48%)', montant_pret:231500, mensualite:1434.94, fin_pret:'12/06/2034', assureur:'—', prime_assurance:null,
     hist:[{annee:2023,montant:26400},{annee:2024,montant:26400},{annee:2025,montant:26400}]},
   {id:-2, nom:'FUNÉRAIRE (OGF)', adresse:'Pamiers / Ariège', type_local:'Local funéraire', date_achat:'2021', cout_achat:961400, locataire:'OGF', loyer_mensuel:6133, bail_echeance:'31/12/2029', banque:'—', montant_pret:700000, mensualite:4128, fin_pret:'180 mois', assureur:'—', prime_assurance:null,
     hist:[{annee:2022,montant:63707},{annee:2023,montant:73596},{annee:2024,montant:73596},{annee:2025,montant:73596}]},
@@ -2131,6 +2334,133 @@ async function loadBiens() {
     }
     recomputeImmo();
   } catch(e) { recomputeImmo(); }
+}
+
+// ── FINANCIER SCI VH IMMO (capital, comptes courants, résultat, bilan par exercice) ──
+// Stocké dans la table générique "coches" sous la clé 'sci_financier'.
+let sciFin = { exercices: {}, courant: null };
+
+function sciBlankExercice() {
+  return { capital:null, resultat:null, cc:[], actif:{total:null,treso:null}, passif:{cp:null,emp:null,det:null} };
+}
+
+async function loadSciFin() {
+  try {
+    const {data} = await sb.from('coches').select('*').eq('cle','sci_financier').maybeSingle();
+    if(data && data.valeur && typeof data.valeur==='object') sciFin = data.valeur;
+  } catch(e) {}
+  // Amorçage : si aucun exercice, on crée l'exercice courant avec les valeurs connues
+  if(!sciFin.exercices || !Object.keys(sciFin.exercices).length) {
+    const an = String(new Date().getFullYear()-1); // dernier exercice clos
+    sciFin = { exercices: { [an]: Object.assign(sciBlankExercice(), {
+      capital:1000, cc:[{nom:'VH', montant:1379169}]
+    }) }, courant: an };
+  }
+  if(!sciFin.courant) sciFin.courant = Object.keys(sciFin.exercices).sort().pop();
+  fillSciSelect();
+  renderSciFin();
+}
+
+function fillSciSelect() {
+  const sel = document.getElementById('sci-ex-select');
+  if(!sel) return;
+  const years = Object.keys(sciFin.exercices).sort();
+  sel.innerHTML = years.map(y=>`<option value="${y}"${y===sciFin.courant?' selected':''}>Exercice ${y}</option>`).join('');
+}
+
+function readSciForm() {
+  const v = id => { const e=document.getElementById(id); return e&&e.value!==''?parseFloat(e.value):null; };
+  const ex = sciFin.exercices[sciFin.courant];
+  ex.capital = v('sf-capital');
+  ex.resultat = v('sf-resultat');
+  ex.actif = { total:v('sf-a-total'), treso:v('sf-a-treso') };
+  ex.passif = { cp:v('sf-p-cp'), emp:v('sf-p-emp'), det:v('sf-p-det') };
+  // comptes courants : lus depuis la liste
+  ex.cc = [...document.querySelectorAll('#sf-cc-list .sci-cc-row')].map(r=>({
+    nom: r.querySelector('.nm').value || '',
+    montant: r.querySelector('.mt').value!=='' ? parseFloat(r.querySelector('.mt').value) : null
+  })).filter(c=>c.nom||c.montant!==null);
+}
+
+function renderSciCc(ex) {
+  const wrap = document.getElementById('sf-cc-list');
+  if(!wrap) return;
+  wrap.innerHTML = '';
+  (ex.cc && ex.cc.length ? ex.cc : [{nom:'',montant:null}]).forEach(c=>{
+    const d = document.createElement('div');
+    d.className = 'sci-cc-row';
+    d.innerHTML = `<input class="sim-in nm" placeholder="Associé" value="${c.nom||''}">
+      <input class="sim-in mt" type="number" placeholder="€" value="${c.montant!=null?c.montant:''}" oninput="liveSciKpis()">
+      <span class="del" onclick="this.parentElement.remove();liveSciKpis()">×</span>`;
+    wrap.appendChild(d);
+  });
+}
+
+function renderSciFin() {
+  const sel = document.getElementById('sci-ex-select');
+  if(sel && sel.value) sciFin.courant = sel.value;
+  const ex = sciFin.exercices[sciFin.courant];
+  if(!ex) return;
+  const set = (id,val)=>{const e=document.getElementById(id);if(e)e.value=(val!=null?val:'');};
+  set('sf-capital', ex.capital);
+  set('sf-resultat', ex.resultat);
+  set('sf-a-total', ex.actif?.total); set('sf-a-treso', ex.actif?.treso);
+  set('sf-p-cp', ex.passif?.cp); set('sf-p-emp', ex.passif?.emp); set('sf-p-det', ex.passif?.det);
+  renderSciCc(ex);
+  liveSciKpis();
+}
+
+// Recalcule totaux, équilibre et KPIs en direct (sans sauvegarde)
+function liveSciKpis() {
+  const v = id => { const e=document.getElementById(id); return e&&e.value!==''?parseFloat(e.value)||0:0; };
+  const totActif = v('sf-a-total');
+  const totPassif = v('sf-p-cp')+v('sf-p-emp')+v('sf-p-det');
+  const ccTot = [...document.querySelectorAll('#sf-cc-list .mt')].reduce((s,i)=>s+(parseFloat(i.value)||0),0);
+  const ccVh = (()=>{ const rows=[...document.querySelectorAll('#sf-cc-list .sci-cc-row')];
+    for(const r of rows){ if((r.querySelector('.nm').value||'').toUpperCase().includes('VH')) return parseFloat(r.querySelector('.mt').value)||0; }
+    return ccTot; })();
+  const set=(id,val)=>{const e=document.getElementById(id);if(e)e.textContent=val;};
+  set('sf-tot-passif', eur(totPassif));
+  set('sci-k-capital', v('sf-capital')?eur(v('sf-capital')):'—');
+  set('sci-k-cc', ccVh?eur(ccVh):'—');
+  const res=v('sf-resultat');
+  set('sci-k-resultat', (document.getElementById('sf-resultat').value!=='')?eur(res):'—');
+  set('sci-k-res-ex', 'exercice '+sciFin.courant);
+  set('sci-k-bilan', totActif?eur(totActif):'—');
+  // contrôle d'équilibre
+  const box = document.getElementById('sf-equilibre');
+  const eqK = document.getElementById('sci-k-bil-eq');
+  const ecart = Math.round(totActif - totPassif);
+  if(totActif===0 && totPassif===0){ box.className='alert a-b'; box.querySelector('div').textContent='Renseigne l\u2019actif et le passif.'; box.querySelector('span').textContent='ℹ'; if(eqK)eqK.textContent='—'; }
+  else if(ecart===0){ box.className='alert a-g'; box.querySelector('div').textContent='Bilan équilibré (actif = passif).'; box.querySelector('span').textContent='✓'; if(eqK)eqK.textContent='équilibré'; }
+  else { box.className='alert a-r'; box.querySelector('div').innerHTML='Écart actif − passif : <strong>'+eur(ecart)+'</strong>'; box.querySelector('span').textContent='⚠'; if(eqK)eqK.textContent='écart '+eur(ecart); }
+}
+
+async function saveSciFin() {
+  readSciForm();
+  try { await sb.from('coches').upsert({cle:'sci_financier', valeur:sciFin, updated_at:new Date().toISOString()}, {onConflict:'cle'}); } catch(e){}
+  liveSciKpis();
+  const btn=event&&event.target; if(btn){const t=btn.textContent;btn.textContent='✓ Enregistré';setTimeout(()=>btn.textContent=t,1500);}
+}
+
+function addSciExercice() {
+  readSciForm();
+  const an = prompt('Année de l\u2019exercice (ex : '+(new Date().getFullYear())+') ?');
+  if(!an) return;
+  const y = String(parseInt(an)); if(y==='NaN'){alert('Année invalide.');return;}
+  if(!sciFin.exercices[y]) sciFin.exercices[y] = sciBlankExercice();
+  sciFin.courant = y;
+  fillSciSelect(); renderSciFin();
+}
+
+function addSciCc() {
+  const wrap = document.getElementById('sf-cc-list');
+  const d = document.createElement('div');
+  d.className = 'sci-cc-row';
+  d.innerHTML = `<input class="sim-in nm" placeholder="Associé">
+    <input class="sim-in mt" type="number" placeholder="€" oninput="liveSciKpis()">
+    <span class="del" onclick="this.parentElement.remove();liveSciKpis()">×</span>`;
+  wrap.appendChild(d);
 }
 
 function baremeIR(rev, parts) {
