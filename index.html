@@ -181,11 +181,11 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:14
   <div class="sb-item" onclick="sw('sim',this)"><span class="sb-ico">◐</span>Simulateur</div>
   <div class="sb-section">Sociétés</div>
   <div class="sb-item" onclick="sw('soc-vh',this)"><span class="sb-ico">▣</span>VH Company<span class="sb-badge g" id="b-vh">✓</span></div>
-  <div class="sb-item" onclick="sw('soc-ba',this)"><span class="sb-ico">▣</span>Burger Avenue<span class="sb-badge" id="b-ba">—</span></div>
-  <div class="sb-item" onclick="sw('soc-bka',this)"><span class="sb-ico">▣</span>BK Avenue<span class="sb-badge" id="b-bka">—</span></div>
-  <div class="sb-item" onclick="sw('soc-bksj',this)"><span class="sb-ico">▣</span>BK Saint-Jean<span class="sb-badge" id="b-bksj">—</span></div>
-  <div class="sb-item" onclick="sw('soc-fvh',this)"><span class="sb-ico">▣</span>FVH SARL<span class="sb-badge" id="b-fvh">—</span></div>
-  <div class="sb-item" onclick="sw('soc-sci',this)"><span class="sb-ico">▣</span>SCI VH Immo<span class="sb-badge" id="b-sci">—</span></div>
+  <div class="sb-item" onclick="sw('soc-ba',this)"><span class="sb-ico">▣</span>Burger Avenue<span class="sb-badge g" id="b-ba">✓</span></div>
+  <div class="sb-item" onclick="sw('soc-bka',this)"><span class="sb-ico">▣</span>BK Avenue<span class="sb-badge g" id="b-bka">✓</span></div>
+  <div class="sb-item" onclick="sw('soc-bksj',this)"><span class="sb-ico">▣</span>BK Saint-Jean<span class="sb-badge g" id="b-bksj">✓</span></div>
+  <div class="sb-item" onclick="sw('soc-fvh',this)"><span class="sb-ico">▣</span>FVH SARL<span class="sb-badge r" id="b-fvh">!</span></div>
+  <div class="sb-item" onclick="sw('soc-sci',this)"><span class="sb-ico">▣</span>SCI VH Immo<span class="sb-badge g" id="b-sci">✓</span></div>
   <div class="sb-section">Impôts</div>
   <div class="sb-item" onclick="sw('declaration',this)"><span class="sb-ico">📋</span>Ma déclaration 2026</div>
   <div class="sb-item" onclick="sw('checklist',this)"><span class="sb-ico">☐</span>Checklist documents</div>
@@ -284,8 +284,8 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:14
         <div class="soc-num"><div class="nl">CC Vincent</div><div class="nv">305k€</div></div>
       </div>
     </div>
-    <div class="soc-card miss" onclick="sw('import',null)" id="card-ba">
-      <div class="soc-hdr"><div><div class="soc-name">Burger Avenue SARL</div><div class="soc-type">SARL · Restauration · Montpellier</div></div><span class="tag tag-gr" id="tag-ba">En attente</span></div>
+    <div class="soc-card imp" onclick="sw('import',null)" id="card-ba">
+      <div class="soc-hdr"><div><div class="soc-name">Burger Avenue SARL</div><div class="soc-type">SARL · Restauration · Montpellier</div></div><span class="tag tag-g" id="tag-ba">✓ Données connues</span></div>
       <div class="soc-nums">
         <div class="soc-num"><div class="nl">CA estimé</div><div class="nv">4 455 906€</div></div>
         <div class="soc-num"><div class="nl">Résultat</div><div class="nv">27 787€</div></div>
@@ -293,8 +293,8 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:14
         <div class="soc-num"><div class="nl">Bilan</div><div class="nv" style="color:var(--warn)">→ Importer</div></div>
       </div>
     </div>
-    <div class="soc-card miss" onclick="sw('import',null)" id="card-bka">
-      <div class="soc-hdr"><div><div class="soc-name">BK Avenue SARL</div><div class="soc-type">SARL · Restauration · St-Clément-de-Rivière</div></div><span class="tag tag-gr" id="tag-bka">En attente</span></div>
+    <div class="soc-card imp" onclick="sw('import',null)" id="card-bka">
+      <div class="soc-hdr"><div><div class="soc-name">BK Avenue SARL</div><div class="soc-type">SARL · Restauration · St-Clément-de-Rivière</div></div><span class="tag tag-g" id="tag-bka">✓ Données connues</span></div>
       <div class="soc-nums">
         <div class="soc-num"><div class="nl">CA estimé</div><div class="nv">6 438 159€</div></div>
         <div class="soc-num"><div class="nl">Résultat</div><div class="nv">435 901€</div></div>
@@ -302,8 +302,8 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:14
         <div class="soc-num"><div class="nl">Bilan</div><div class="nv" style="color:var(--warn)">→ Importer</div></div>
       </div>
     </div>
-    <div class="soc-card miss" onclick="sw('import',null)" id="card-bksj">
-      <div class="soc-hdr"><div><div class="soc-name">BK Saint-Jean SARL</div><div class="soc-type">SARL · Restauration · St-Jean-de-Védas</div></div><span class="tag tag-gr" id="tag-bksj">En attente</span></div>
+    <div class="soc-card imp" onclick="sw('import',null)" id="card-bksj">
+      <div class="soc-hdr"><div><div class="soc-name">BK Saint-Jean SARL</div><div class="soc-type">SARL · Restauration · St-Jean-de-Védas</div></div><span class="tag tag-g" id="tag-bksj">✓ Données connues</span></div>
       <div class="soc-nums">
         <div class="soc-num"><div class="nl">CA estimé</div><div class="nv">5 071 734€</div></div>
         <div class="soc-num"><div class="nl">Résultat</div><div class="nv">236 553€</div></div>
@@ -320,8 +320,8 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:14
         <div class="soc-num"><div class="nl">Bilan</div><div class="nv" style="color:var(--warn)">→ Importer</div></div>
       </div>
     </div>
-    <div class="soc-card miss" onclick="sw('import',null)" id="card-sci">
-      <div class="soc-hdr"><div><div class="soc-name">SCI VH Immo</div><div class="soc-type">SCI · 10% VH Company</div></div><span class="tag tag-gr" id="tag-sci">En attente</span></div>
+    <div class="soc-card imp" onclick="sw('import',null)" id="card-sci">
+      <div class="soc-hdr"><div><div class="soc-name">SCI VH Immo</div><div class="soc-type">SCI · 10% VH Company</div></div><span class="tag tag-g" id="tag-sci">✓ Données connues</span></div>
       <div class="soc-nums">
         <div class="soc-num"><div class="nl">% VH Company</div><div class="nv">10%</div></div>
         <div class="soc-num"><div class="nl">CC VH (actif)</div><div class="nv">1 379 169€</div></div>
@@ -455,7 +455,62 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:14
   <div class="alert a-r"><span>⚠</span><div><strong>FVH SARL</strong> — Déficitaire (−2 104€). Pas de dividendes. CC débiteur dans VH : 101 000€. <button class="btn btn-p" style="margin-left:10px;" onclick="sw('import',null)">Importer →</button></div></div>
 </div>
 <div id="tab-soc-sci" class="panel">
-  <div class="alert a-b"><span>ℹ</span><div><strong>SCI VH Immo</strong> — VH détient 10%. CC actif de VH dans la SCI : 1 379 169€. Loyers personnels estimés 14 400€/an. <button class="btn btn-p" style="margin-left:10px;" onclick="sw('import',null)">Importer →</button></div></div>
+  <div class="alert a-b"><span>🏢</span><div><strong>SCI VH Immo</strong> — VH détient 10%. CC actif de VH : 1 379 169€. Gère ici chaque bâtiment : achat, bail, prêt, assurance et suivi des loyers.</div></div>
+
+  <div class="g4">
+    <div class="kpi acc"><div class="kl">Bâtiments</div><div class="kv" id="immo-count">0</div><div class="ks">Dans le portefeuille</div></div>
+    <div class="kpi suc"><div class="kl">Loyers annuels</div><div class="kv" id="immo-loyers">0€</div><div class="ks">Total déclaré</div></div>
+    <div class="kpi"><div class="kl">Valeur d'achat</div><div class="kv" id="immo-achat">0€</div><div class="ks">Cumul</div></div>
+    <div class="kpi war"><div class="kl">Mensualités prêts</div><div class="kv" id="immo-pret">0€</div><div class="ks">Total / mois</div></div>
+  </div>
+
+  <div style="display:flex;justify-content:space-between;align-items:center;margin:14px 0 10px;">
+    <div class="card-title" style="margin:0;">Les bâtiments de la SCI</div>
+    <button class="btn btn-p" onclick="openBien()">+ Ajouter un bâtiment</button>
+  </div>
+
+  <div id="immo-list"></div>
+  <div id="immo-empty" class="card" style="text-align:center;color:var(--text3);padding:24px;">Aucun bâtiment encore. Clique « + Ajouter un bâtiment » pour commencer, ou envoie-moi un bail dans le chat pour que je le remplisse.</div>
+</div>
+
+<!-- MODAL AJOUT BATIMENT -->
+<div id="modal-bien" style="display:none;position:fixed;inset:0;background:rgba(26,24,20,0.5);z-index:100;align-items:center;justify-content:center;padding:20px;">
+  <div class="card" style="max-width:520px;width:100%;max-height:90vh;overflow-y:auto;">
+    <div class="card-title">Ajouter / modifier un bâtiment</div>
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      <input id="bi-nom" class="sim-in" placeholder="Nom / référence du bâtiment" style="font-family:var(--font);">
+      <input id="bi-adr" class="sim-in" placeholder="Adresse complète" style="font-family:var(--font);">
+      <input id="bi-type" class="sim-in" placeholder="Type (local commercial, restaurant…)" style="font-family:var(--font);">
+      <div style="display:flex;gap:8px;">
+        <input id="bi-dateach" class="sim-in" placeholder="Date d'achat" style="font-family:var(--font);flex:1;">
+        <input id="bi-coutach" class="sim-in" type="number" placeholder="Coût d'achat €" style="font-family:var(--font);flex:1;">
+      </div>
+      <div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-top:4px;">Bail commercial</div>
+      <input id="bi-loc" class="sim-in" placeholder="Locataire" style="font-family:var(--font);">
+      <div style="display:flex;gap:8px;">
+        <input id="bi-loyer" class="sim-in" type="number" placeholder="Loyer mensuel €" style="font-family:var(--font);flex:1;">
+        <input id="bi-bail" class="sim-in" placeholder="Échéance bail" style="font-family:var(--font);flex:1;">
+      </div>
+      <div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-top:4px;">Financement</div>
+      <div style="display:flex;gap:8px;">
+        <input id="bi-banque" class="sim-in" placeholder="Banque" style="font-family:var(--font);flex:1;">
+        <input id="bi-mens" class="sim-in" type="number" placeholder="Mensualité €" style="font-family:var(--font);flex:1;">
+      </div>
+      <div style="display:flex;gap:8px;">
+        <input id="bi-pret" class="sim-in" type="number" placeholder="Montant prêt €" style="font-family:var(--font);flex:1;">
+        <input id="bi-finpret" class="sim-in" placeholder="Fin du prêt" style="font-family:var(--font);flex:1;">
+      </div>
+      <div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-top:4px;">Assurance</div>
+      <div style="display:flex;gap:8px;">
+        <input id="bi-assur" class="sim-in" placeholder="Assureur" style="font-family:var(--font);flex:1;">
+        <input id="bi-prime" class="sim-in" type="number" placeholder="Prime €/an" style="font-family:var(--font);flex:1;">
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:14px;">
+      <button class="btn btn-p" style="flex:1;" onclick="saveBien()">Enregistrer</button>
+      <button class="btn" style="flex:1;" onclick="closeBien()">Annuler</button>
+    </div>
+  </div>
 </div>
 
 <!-- MA DECLARATION 2026 -->
@@ -849,6 +904,22 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:14
   <div id="flist"></div>
 
   <div class="card">
+    <div class="card-title">📁 Bilans par société — dossier à jour</div>
+    <table class="tbl">
+      <thead><tr><th>Société</th><th>Dernier exercice connu</th><th class="r">Bilan</th><th class="r"></th></tr></thead>
+      <tbody>
+        <tr><td><strong>VH Company</strong> (holding)</td><td>30/06/2025</td><td class="r"><span class="tag tag-g" id="bilan-vh">✓ Importé</span></td><td class="r"><button class="btn" style="font-size:11px;padding:4px 10px;" onclick="importBilan('VH Company')">Réimporter</button></td></tr>
+        <tr><td><strong>Burger Avenue</strong> SARL</td><td>Bilan VH (résultat 27 787€)</td><td class="r"><span class="tag tag-gr" id="bilan-ba">À importer</span></td><td class="r"><button class="btn" style="font-size:11px;padding:4px 10px;" onclick="importBilan('Burger Avenue')">Importer</button></td></tr>
+        <tr><td><strong>BK Avenue</strong> SARL</td><td>Bilan VH (résultat 435 901€)</td><td class="r"><span class="tag tag-gr" id="bilan-bka">À importer</span></td><td class="r"><button class="btn" style="font-size:11px;padding:4px 10px;" onclick="importBilan('BK Avenue')">Importer</button></td></tr>
+        <tr><td><strong>BK Saint-Jean</strong> SARL</td><td>Bilan VH (résultat 236 553€)</td><td class="r"><span class="tag tag-gr" id="bilan-bksj">À importer</span></td><td class="r"><button class="btn" style="font-size:11px;padding:4px 10px;" onclick="importBilan('BK Saint-Jean')">Importer</button></td></tr>
+        <tr><td><strong>FVH</strong> SARL</td><td>Déficitaire (−2 104€)</td><td class="r"><span class="tag tag-gr" id="bilan-fvh">À importer</span></td><td class="r"><button class="btn" style="font-size:11px;padding:4px 10px;" onclick="importBilan('FVH')">Importer</button></td></tr>
+        <tr><td><strong>SCI VH Immo</strong></td><td>CC VH 1,38M€</td><td class="r"><span class="tag tag-gr" id="bilan-sci">À importer</span></td><td class="r"><button class="btn" style="font-size:11px;padding:4px 10px;" onclick="importBilan('SCI VH Immo')">Importer</button></td></tr>
+      </tbody>
+    </table>
+    <div class="alert a-b" style="margin-top:10px;"><span>💡</span><div>Nomme tes fichiers avec le nom de la société (ex : <strong>BK_Avenue_2025.pdf</strong>) pour qu'ils soient reconnus automatiquement. Le bilan passe alors en vert « à jour ». Pense aussi à me l'envoyer dans le chat pour que j'en extraie les chiffres.</div></div>
+  </div>
+
+  <div class="card">
     <div class="card-title">Mes documents archivés</div>
     <table class="tbl">
       <thead><tr><th>Document</th><th>Catégorie</th><th class="r">Date</th></tr></thead>
@@ -900,6 +971,7 @@ async function init() {
     await setupTables();
     await loadState();
     await loadFiches();
+    await loadBiens();
     document.getElementById('db-dot').classList.remove('off');
     document.getElementById('db-status').textContent = 'Supabase connecté';
   } catch(e) {
@@ -988,6 +1060,7 @@ async function loadState() {
         count++;
         addFileToUI(doc.nom, doc.type, doc.societe, true);
         addDocToTable(doc.nom, doc.societe);
+        if(doc.societe==='Société') updateSocBadge(doc.nom);
       });
       document.getElementById('b-imp').textContent = count;
     }
@@ -1171,6 +1244,153 @@ async function loadFiches() {
   } catch(e) {}
 }
 
+// ── IMMOBILIER (SCI VH Immo) ──
+let immoBiens = [];
+let immoLoyers = [];
+
+function openBien() {
+  ['bi-nom','bi-adr','bi-type','bi-dateach','bi-coutach','bi-loc','bi-loyer','bi-bail','bi-banque','bi-mens','bi-pret','bi-finpret','bi-assur','bi-prime'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
+  document.getElementById('modal-bien').style.display='flex';
+}
+function closeBien(){ document.getElementById('modal-bien').style.display='none'; }
+
+async function saveBien() {
+  const v = id => { const e=document.getElementById(id); return e?e.value:''; };
+  const num = id => +v(id) || null;
+  const b = {
+    nom: v('bi-nom')||'Bâtiment sans nom', adresse: v('bi-adr'), type_local: v('bi-type'),
+    date_achat: v('bi-dateach'), cout_achat: num('bi-coutach'),
+    locataire: v('bi-loc'), loyer_mensuel: num('bi-loyer'), bail_echeance: v('bi-bail'),
+    banque: v('bi-banque'), montant_pret: num('bi-pret'), mensualite: num('bi-mens'), fin_pret: v('bi-finpret'),
+    assureur: v('bi-assur'), prime_assurance: num('bi-prime')
+  };
+  try {
+    const {data} = await sb.from('biens_immo').insert(b).select().single();
+    if(data){ immoBiens.push(data); renderBien(data, []); }
+    else { renderBien(b, []); }
+  } catch(e) { renderBien(b, []); }
+  recomputeImmo();
+  closeBien();
+}
+
+const eur = n => (n||n===0) ? Math.round(n).toLocaleString('fr-FR')+'€' : '—';
+
+function loyerTrend(hist) {
+  if(!hist || hist.length<2) return '';
+  const s=[...hist].sort((a,b)=>a.annee-b.annee), f=s[0].montant, l=s[s.length-1].montant;
+  if(!f) return '';
+  const p=Math.round((l-f)/f*100);
+  if(p>0) return `<span style="color:var(--success);font-size:11px;">▲ +${p}% depuis ${s[0].annee}</span>`;
+  if(p<0) return `<span style="color:var(--danger);font-size:11px;">▼ ${p}% depuis ${s[0].annee}</span>`;
+  return `<span style="color:var(--text3);font-size:11px;">= stable</span>`;
+}
+
+function renderBien(b, hist) {
+  hist = hist || [];
+  const emptyMsg = document.getElementById('immo-empty');
+  if(emptyMsg) emptyMsg.style.display='none';
+  const wrap = document.getElementById('immo-list');
+  if(!wrap) return;
+  const d = document.createElement('div');
+  d.className = 'card';
+  if(b.id) d.dataset.bid = b.id;
+  const histTxt = hist.length ? [...hist].sort((a,b)=>a.annee-b.annee).map(h=>`${h.annee}: ${eur(h.montant)}`).join(' · ') : 'Aucun historique';
+  const loyerAn = b.loyer_mensuel ? b.loyer_mensuel*12 : null;
+  d.innerHTML = `
+  <div class="soc-hdr"><div><div class="soc-name">${b.nom}</div><div class="soc-type">${b.adresse||''}${b.type_local?' · '+b.type_local:''}</div></div>${(b.id&&b.id>0)?`<span style="cursor:pointer;color:var(--text3);" onclick="deleteBien(${b.id},this)">×</span>`:'<span class="tag tag-g">SCI</span>'}</div>
+  <div class="soc-nums" style="flex-wrap:wrap;gap:14px;">
+    <div class="soc-num"><div class="nl">Coût d'achat</div><div class="nv">${eur(b.cout_achat)}</div></div>
+    <div class="soc-num"><div class="nl">Loyer/an</div><div class="nv">${eur(loyerAn)}</div></div>
+    <div class="soc-num"><div class="nl">Locataire</div><div class="nv" style="font-size:13px;">${b.locataire||'—'}</div></div>
+    <div class="soc-num"><div class="nl">Bail échéance</div><div class="nv" style="font-size:13px;">${b.bail_echeance||'—'}</div></div>
+    <div class="soc-num"><div class="nl">Prêt (mens.)</div><div class="nv">${eur(b.mensualite)}</div></div>
+    <div class="soc-num"><div class="nl">Assurance</div><div class="nv" style="font-size:13px;">${b.assureur||'—'}${b.prime_assurance?' '+eur(b.prime_assurance):''}</div></div>
+  </div>
+  <div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);">
+    <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px;">Suivi des loyers ${loyerTrend(hist)}</div>
+    <div style="font-size:11px;color:var(--text2);font-family:var(--mono);" class="loyer-line">${histTxt}</div>
+    ${(b.id&&b.id>0)?`<button class="btn" style="font-size:11px;padding:4px 10px;margin-top:6px;" onclick="addLoyer(${b.id},this)">+ Ajouter le loyer d'une année</button>`:''}
+  </div>`;
+  wrap.appendChild(d);
+}
+
+async function addLoyer(id, btn) {
+  const annee = prompt('Année (ex : 2025) ?', new Date().getFullYear());
+  if(!annee) return;
+  const montant = prompt('Loyer total perçu cette année-là (€) ?');
+  if(!montant) return;
+  const a=parseInt(annee), m=parseFloat((montant||'').replace(',','.'));
+  if(isNaN(a)||isNaN(m)){alert('Valeurs invalides.');return;}
+  try { await sb.from('loyers_historique').insert({bien_id:id, annee:a, montant:m}); } catch(e){}
+  try {
+    const {data} = await sb.from('loyers_historique').select('*').eq('bien_id', id);
+    const card = btn.closest('.card');
+    const line = card.querySelector('.loyer-line');
+    if(data && data.length){
+      const s=[...data].sort((x,y)=>x.annee-y.annee);
+      line.textContent = s.map(h=>`${h.annee}: ${eur(h.montant)}`).join(' · ');
+      const lbl = card.querySelector('div[style*="uppercase"]');
+      if(lbl) lbl.innerHTML='Suivi des loyers '+loyerTrend(data);
+    }
+  } catch(e){}
+}
+
+async function deleteBien(id, el) {
+  if(!confirm('Supprimer ce bâtiment ?')) return;
+  try { await sb.from('biens_immo').delete().eq('id', id); } catch(e){}
+  const card = el.closest('.card');
+  if(card) card.remove();
+  immoBiens = immoBiens.filter(b=>b.id!==id);
+  recomputeImmo();
+}
+
+function recomputeImmo() {
+  const n = immoBiens.length;
+  const loyers = immoBiens.reduce((s,b)=>s+((b.loyer_mensuel||0)*12),0);
+  const achat = immoBiens.reduce((s,b)=>s+(b.cout_achat||0),0);
+  const pret = immoBiens.reduce((s,b)=>s+(b.mensualite||0),0);
+  const set=(id,val)=>{const e=document.getElementById(id);if(e)e.textContent=val;};
+  set('immo-count', n);
+  set('immo-loyers', eur(loyers));
+  set('immo-achat', eur(achat));
+  set('immo-pret', eur(pret));
+}
+
+// Bâtiments réels de la SCI (données du fichier Excel) — affichés en dur
+const BIENS_SEED = [
+  {id:-1, nom:'AUCHAN Galerie', adresse:'Pérols', type_local:'Galerie commerciale', date_achat:'2019', cout_achat:234500, locataire:'Happe SW', loyer_mensuel:2200, bail_echeance:'13/06/2028', banque:'—', montant_pret:231500, mensualite:1435, fin_pret:'180 mois', assureur:'—', prime_assurance:null,
+    hist:[{annee:2023,montant:26400},{annee:2024,montant:26400},{annee:2025,montant:26400}]},
+  {id:-2, nom:'FUNÉRAIRE (OGF)', adresse:'Pamiers / Ariège', type_local:'Local funéraire', date_achat:'2021', cout_achat:961400, locataire:'OGF', loyer_mensuel:6133, bail_echeance:'31/12/2029', banque:'—', montant_pret:700000, mensualite:4128, fin_pret:'180 mois', assureur:'—', prime_assurance:null,
+    hist:[{annee:2022,montant:63707},{annee:2023,montant:73596},{annee:2024,montant:73596},{annee:2025,montant:73596}]},
+  {id:-3, nom:'AUDIKA', adresse:'Dinan', type_local:'Local commercial', date_achat:'2019', cout_achat:540762, locataire:'Audika', loyer_mensuel:1075, bail_echeance:'30/06/2028', banque:'—', montant_pret:450000, mensualite:2808, fin_pret:'180 mois', assureur:'—', prime_assurance:null,
+    hist:[{annee:2024,montant:12290},{annee:2025,montant:12901}]},
+  {id:-4, nom:'GUY HOQUET', adresse:'Dinan', type_local:'Local commercial', date_achat:'2021', cout_achat:540762, locataire:'Guy Hoquet', loyer_mensuel:2379, bail_echeance:'31/12/2030', banque:'—', montant_pret:450000, mensualite:null, fin_pret:'—', assureur:'—', prime_assurance:null,
+    hist:[{annee:2024,montant:27704},{annee:2025,montant:28543}]},
+  {id:-5, nom:'BOULANGER', adresse:'Digne-les-Bains', type_local:'Magasin', date_achat:'2019', cout_achat:1613461, locataire:'Boulanger', loyer_mensuel:8596, bail_echeance:'31/12/2028', banque:'Caution banque', montant_pret:1250000, mensualite:7799, fin_pret:'—', assureur:'MMA', prime_assurance:null,
+    hist:[{annee:2024,montant:103157},{annee:2025,montant:103157}]},
+  {id:-6, nom:'NORAUTO', adresse:'Sarrebourg', type_local:'Centre auto', date_achat:'2017', cout_achat:985900, locataire:'Norauto', loyer_mensuel:5949, bail_echeance:'31/05/2026', banque:'Caution banque', montant_pret:750000, mensualite:5636, fin_pret:'—', assureur:'MMA', prime_assurance:null,
+    hist:[{annee:2024,montant:68972},{annee:2025,montant:71388}]},
+  {id:-7, nom:'POISSONNERIE', adresse:'Laverune', type_local:'Local commercial', date_achat:'2023', cout_achat:150000, locataire:'—', loyer_mensuel:1125, bail_echeance:'31/12/2031', banque:'—', montant_pret:0, mensualite:null, fin_pret:'—', assureur:'MMA', prime_assurance:null,
+    hist:[{annee:2024,montant:7875},{annee:2025,montant:13500}]}
+];
+
+async function loadBiens() {
+  try {
+    // 1) bâtiments réels (toujours affichés)
+    BIENS_SEED.forEach(b => { immoBiens.push(b); renderBien(b, b.hist||[]); });
+    // 2) bâtiments ajoutés via le bouton (Supabase)
+    const {data} = await sb.from('biens_immo').select('*').order('created_at',{ascending:true});
+    if(data){
+      immoBiens = immoBiens.concat(data);
+      let hist=[];
+      try { const {data:h}=await sb.from('loyers_historique').select('*'); hist=h||[]; } catch(e){}
+      immoLoyers = hist;
+      data.forEach(b => renderBien(b, hist.filter(x=>x.bien_id===b.id)));
+    }
+    recomputeImmo();
+  } catch(e) { recomputeImmo(); }
+}
+
 function baremeIR(rev, parts) {
   const q = rev/parts; let t = 0;
   if(q>180294)t+=(q-180294)*.45;
@@ -1186,6 +1406,14 @@ let impCount = 0;
 function dov(e){e.preventDefault();document.getElementById('drop-z').classList.add('over');}
 function dol(){document.getElementById('drop-z').classList.remove('over');}
 function ddrop(e){e.preventDefault();dol();handleF(e.dataTransfer.files);}
+
+// Lance l'import d'un bilan pour une société donnée
+function importBilan(soc) {
+  const sel = document.getElementById('imp-cat');
+  if(sel) sel.value = 'Société';
+  alert('Sélectionne le fichier du bilan pour : ' + soc + '\n\nAstuce : renomme-le avec le nom de la société pour la reconnaissance automatique.');
+  document.getElementById('finput').click();
+}
 
 async function handleF(files) {
   const cat = document.getElementById('imp-cat') ? document.getElementById('imp-cat').value : 'Autre';
@@ -1203,6 +1431,7 @@ async function handleF(files) {
       saved = data;
     } catch(e) {}
     addDocToTable(f.name, cat);
+    if(cat==='Société') updateSocBadge(f.name);
     setTimeout(() => {
       const items = document.querySelectorAll('.fitem');
       if(items.length > 0) {
@@ -1235,8 +1464,35 @@ function addDocToTable(name, cat) {
   tbl.prepend(tr);
 }
 
-// conservé pour compatibilité (ne fait plus rien de visible)
-function updateSocBadge(soc) {}
+// Détecte la société d'après le nom de fichier
+function detectSoc(name) {
+  const n = (name||'').toLowerCase();
+  if(n.includes('bk_avenue')||n.includes('bkavenue')||n.includes('bk avenue')) return 'bka';
+  if(n.includes('bk_saint')||n.includes('saint_jean')||n.includes('bksj')||n.includes('bk saint')||n.includes('saint jean')||n.includes('vedas')) return 'bksj';
+  if(n.includes('burger')||n.includes('avenue_500')||n.includes('ba_')||n.includes('ba500')) return 'ba';
+  if(n.includes('fvh')) return 'fvh';
+  if(n.includes('sci')||n.includes('immo')) return 'sci';
+  if(n.includes('vh_company')||n.includes('vhcompany')||n.includes('vh company')||n.includes('vhcompagnie')) return 'vh';
+  return null;
+}
+
+// Passe la pastille + la carte de la société en vert "à jour"
+function markSoc(key) {
+  if(!key) return;
+  const b = document.getElementById('b-'+key);
+  if(b){b.className='sb-badge g';b.textContent='✓';}
+  const card = document.getElementById('card-'+key);
+  if(card){card.classList.remove('miss');card.classList.add('imp');}
+  const tag = document.getElementById('tag-'+key);
+  if(tag && key!=='fvh'){tag.className='tag tag-g';tag.textContent='✓ À jour';}
+  // met à jour la ligne "Bilans" si présente
+  const bl = document.getElementById('bilan-'+key);
+  if(bl){bl.className='tag tag-g';bl.textContent='✓ Importé';}
+}
+
+function updateSocBadge(name) {
+  markSoc(detectSoc(name));
+}
 
 // ── START ──
 init();
