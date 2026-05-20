@@ -908,6 +908,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:14
       <div class="card-title" style="margin:0;">Mes bâtiments</div>
       <div style="display:flex;align-items:center;gap:12px;">
         <button class="btn btn-p" onclick="openBat()">+ Nouveau bâtiment</button>
+        <button class="btn" onclick="forceSeedBats()">⟳ Créer les 7 bâtiments</button>
         <span style="font-size:11px;color:var(--text3);cursor:pointer;text-decoration:underline;" onclick="resyncAuchan()">Resynchroniser Auchan</span>
         <span style="font-size:11px;color:var(--text3);cursor:pointer;text-decoration:underline;" onclick="restoreHidden()">Restaurer les supprimés</span>
       </div>
@@ -1100,17 +1101,23 @@ const eurB = n => (n||n===0) ? Math.round(n).toLocaleString('fr-FR')+'€' : '�
 const numOrNull = s => { const n = parseFloat((''+s).replace(',','.')); return isNaN(n)?null:n; };
 
 async function loadBats() {
-  batiments = [];
+  // 1) On part TOUJOURS du seed local : les 7 bâtiments s'affichent même si
+  //    Supabase est indisponible (table absente, hors ligne, droits…).
+  batiments = BIENS_SEED.map(s => normalizeBat(Object.assign({id:'seed_'+s.id}, batPayloadFromSeed(s))));
   try {
-    let {data} = await sb.from('batiments').select('*').order('created_at',{ascending:true});
-    // Amorçage unique : si la table est vide et qu'on n'a jamais amorcé, on
-    // importe les 7 bâtiments historiques (ils deviennent alors modifiables).
-    if((!data || data.length===0) && !(await batsAlreadySeeded())) {
-      await seedBatsFromBiens();
-      const r = await sb.from('batiments').select('*').order('created_at',{ascending:true});
-      data = r.data;
+    const {data} = await sb.from('batiments').select('*').order('created_at',{ascending:true});
+    if(data && data.length) {
+      // 2) Supabase répond : on remplace le seed par les vrais enregistrements
+      //    (modifiables), en évitant les doublons par nom.
+      const dbNoms = new Set(data.map(d=>(d.nom||'').trim().toUpperCase()));
+      const seedRestant = batiments.filter(b => !dbNoms.has((b.nom||'').trim().toUpperCase()));
+      batiments = data.map(normalizeBat).concat(seedRestant);
+      // Amorçage en arrière-plan des bâtiments encore absents de la base
+      if(seedRestant.length && !(await batsAlreadySeeded())) { seedBatsFromBiens(); }
+    } else if(!(await batsAlreadySeeded())) {
+      // 3) Base vide : on tente l'amorçage, mais l'affichage est déjà assuré par le seed
+      seedBatsFromBiens();
     }
-    if(data) batiments = data.map(normalizeBat);
   } catch(e) {}
   renderBatList();
 }
@@ -1151,32 +1158,56 @@ async function batsAlreadySeeded() {
 
 // Convertit les 7 bâtiments historiques (BIENS_SEED) vers la structure détaillée
 async function seedBatsFromBiens() {
-  try {
-    for(const s of BIENS_SEED) {
-      const pret = (s.montant_pret || s.mensualite) ? [{
-        banque: (s.banque && s.banque!=='—') ? s.banque : '',
-        capital: s.montant_pret || null,
-        mensualite: s.mensualite || null,
-        taux: null,
-        fin: (s.fin_pret && s.fin_pret!=='—') ? s.fin_pret : '',
-        crd: null
-      }] : [];
-      // L'historique annuel des loyers encaissés devient des quittances annuelles "payées"
-      const loyers = (s.hist||[]).map(h => ({ periode:'Année '+h.annee, montant:h.montant, date_emission:'', paye:true }));
-      const payload = {
-        nom: s.nom, adresse: s.adresse, type_local: s.type_local,
-        acq: { date: s.date_achat||'', prix: s.cout_achat||null, notaire:null, etude:'', ref:'', valeur:null, notes:'' },
-        bail: { locataire: (s.locataire && s.locataire!=='—') ? s.locataire : '', loyer_mensuel: s.loyer_mensuel||null, surface:null, depot:null, charges:null, indexation:'', effet:'', fin: s.bail_echeance||'', revision:'', notes:'' },
-        prets: pret,
-        loyers: loyers,
-        taxes: [],
-        syndic: {appels:[]},
-        docs: []
-      };
-      await sb.from('batiments').insert(payload);
-    }
-    await sb.from('coches').upsert({cle:'bats_seeded', valeur:true, updated_at:new Date().toISOString()}, {onConflict:'cle'});
-  } catch(e) {}
+  let ok=0;
+  for(const s of BIENS_SEED) {
+    try { const {error}=await sb.from('batiments').insert(batPayloadFromSeed(s)); if(!error) ok++; }
+    catch(e) {}
+  }
+  // On ne mémorise l'amorçage que s'il a vraiment fonctionné, sinon il pourra
+  // se relancer au prochain démarrage (ou via le bouton « Créer les 7 bâtiments »).
+  if(ok === BIENS_SEED.length) {
+    try { await sb.from('coches').upsert({cle:'bats_seeded', valeur:true, updated_at:new Date().toISOString()}, {onConflict:'cle'}); } catch(e){}
+  }
+}
+
+// Construit le payload détaillé d'un bâtiment à partir d'une entrée BIENS_SEED
+function batPayloadFromSeed(s) {
+  const pret = (s.montant_pret || s.mensualite) ? [{
+    banque: (s.banque && s.banque!=='—') ? s.banque : '',
+    capital: s.montant_pret || null, mensualite: s.mensualite || null,
+    taux: null, fin: (s.fin_pret && s.fin_pret!=='—') ? s.fin_pret : '', crd: null
+  }] : [];
+  const loyers = (s.hist||[]).map(h => ({ periode:'Année '+h.annee, montant:h.montant, date_emission:'', paye:true }));
+  return {
+    nom: s.nom, adresse: s.adresse, type_local: s.type_local,
+    acq: { date: s.date_achat||'', prix: s.cout_achat||null, notaire:null, etude:'', ref:'', valeur:null, notes:'' },
+    bail: { locataire: (s.locataire && s.locataire!=='—') ? s.locataire : '', loyer_mensuel: s.loyer_mensuel||null, surface:s.surface||null, depot:s.depot_garantie||null, charges:s.charges||null, indexation:s.indexation||'', effet:'', fin: s.bail_echeance||'', revision:s.revision||'', notes:'' },
+    prets: pret, loyers: loyers, taxes: [], syndic:{appels:[]}, docs: []
+  };
+}
+
+// Bouton manuel : crée les bâtiments manquants depuis le seed, sans dépendre du drapeau.
+// Anti-doublon par nom. Affiche un vrai bilan (créés / déjà présents / erreurs).
+async function forceSeedBats() {
+  if(!confirm('Créer les '+BIENS_SEED.length+' bâtiments à partir des données historiques ?\n\nLes bâtiments déjà présents (même nom) ne seront pas dupliqués.')) return;
+  let crees=0, existants=0, erreurs=0;
+  const dejaNoms = new Set(batiments.map(b=>(b.nom||'').trim().toUpperCase()));
+  for(const s of BIENS_SEED) {
+    const nm = (s.nom||'').trim().toUpperCase();
+    if(dejaNoms.has(nm)) { existants++; continue; }
+    try {
+      const {error} = await sb.from('batiments').insert(batPayloadFromSeed(s));
+      if(error) throw error;
+      crees++;
+    } catch(e) { erreurs++; }
+  }
+  // On (re)pose le drapeau pour que l'amorçage auto ne refasse pas le travail
+  try { await sb.from('coches').upsert({cle:'bats_seeded', valeur:true, updated_at:new Date().toISOString()}, {onConflict:'cle'}); } catch(e){}
+  await loadBats();
+  let msg = crees+' bâtiment(s) créé(s).';
+  if(existants) msg += '\n'+existants+' déjà présent(s), ignoré(s).';
+  if(erreurs) msg += '\n⚠ '+erreurs+' en erreur (vérifie que la table « batiments » existe et est accessible dans Supabase).';
+  alert(msg);
 }
 
 // Garantit que toutes les sous-structures existent
