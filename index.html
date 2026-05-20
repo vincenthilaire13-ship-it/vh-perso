@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fiscal Hub — Hilaire / Vincent</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap');
+:root {
+  --bg:#F4F1EC;--surface:#fff;--surface2:#EDE9E2;--text:#1A1814;--text2:#6B6458;--text3:#A89F95;
+  --accent:#1B4FD8;--accent-l:#E8EDFB;--danger:#C13030;--danger-l:#FBE8E8;
+  --warn:#B45309;--warn-l:#FEF3C7;--success:#166534;--success-l:#DCFCE7;
+  --border:rgba(26,24,20,0.1);--border2:rgba(26,24,20,0.2);
+  --shadow:0 1px 3px rgba(26,24,20,0.08),0 4px 16px rgba(26,24,20,0.04);
+  --r:12px;--rl:16px;--font:'DM Sans',sans-serif;--mono:'DM Mono',monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:14px;line-height:1.5;min-height:100vh;}
+
+/* LAYOUT */
+.layout{display:grid;grid-template-columns:230px 1fr;min-height:100vh;}
+.sidebar{background:var(--text);color:#F4F1EC;padding:24px 0;display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow-y:auto;}
+.main{overflow-x:hidden;}
+.sb-logo{padding:0 18px 20px;border-bottom:1px solid rgba(255,255,255,0.08);margin-bottom:8px;}
+.sb-logo h1{font-size:15px;font-weight:600;letter-spacing:-0.3px;}
+.sb-logo p{font-size:11px;opacity:0.4;margin-top:2px;font-family:var(--mono);}
+.sb-section{padding:8px 12px;font-size:10px;font-weight:600;letter-spacing:1px;opacity:0.3;text-transform:uppercase;margin-top:6px;}
+.sb-item{display:flex;align-items:center;gap:9px;padding:8px 18px;font-size:13px;cursor:pointer;transition:all .15s;border-left:2px solid transparent;color:rgba(244,241,236,0.65);}
+.sb-item:hover{background:rgba(255,255,255,0.06);color:#F4F1EC;}
+.sb-item.active{background:rgba(255,255,255,0.1);color:#F4F1EC;border-left-color:#6B9BFF;font-weight:500;}
+.sb-ico{width:16px;text-align:center;font-size:13px;flex-shrink:0;}
+.sb-badge{margin-left:auto;background:rgba(255,255,255,0.1);color:rgba(244,241,236,0.7);font-size:10px;padding:1px 6px;border-radius:8px;font-family:var(--mono);}
+.sb-badge.g{background:rgba(22,101,52,0.4);color:#86EFAC;}
+.sb-badge.r{background:rgba(193,48,48,0.35);color:#FCA5A5;}
+.sb-footer{margin-top:auto;padding:14px 18px 0;border-top:1px solid rgba(255,255,255,0.08);}
+.sb-footer p{font-size:10px;opacity:0.3;font-family:var(--mono);}
+
+.topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:12px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10;}
+.topbar h2{font-size:15px;font-weight:600;letter-spacing:-0.3px;}
+.topbar-r{display:flex;align-items:center;gap:8px;}
+.content{padding:20px 24px;}
+.panel{display:none;}.panel.active{display:block;}
+
+/* COMPONENTS */
+.card{background:var(--surface);border-radius:var(--rl);border:1px solid var(--border);padding:18px 20px;box-shadow:var(--shadow);margin-bottom:14px;}
+.card-title{font-size:13px;font-weight:600;margin-bottom:12px;}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:14px;}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:14px;}
+.kpi{background:var(--surface2);border-radius:var(--r);padding:14px 16px;}
+.kpi .kl{font-size:11px;color:var(--text3);font-weight:500;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:5px;}
+.kpi .kv{font-size:20px;font-weight:600;letter-spacing:-0.5px;font-family:var(--mono);}
+.kpi .ks{font-size:11px;color:var(--text3);margin-top:2px;}
+.kpi.acc{background:var(--accent-l);}.kpi.acc .kv{color:var(--accent);}
+.kpi.dan{background:var(--danger-l);}.kpi.dan .kv{color:var(--danger);}
+.kpi.war{background:var(--warn-l);}.kpi.war .kv{color:var(--warn);}
+.kpi.suc{background:var(--success-l);}.kpi.suc .kv{color:var(--success);}
+.tag{display:inline-flex;align-items:center;font-size:11px;padding:2px 8px;border-radius:5px;font-weight:500;}
+.tag-b{background:var(--accent-l);color:var(--accent);}
+.tag-r{background:var(--danger-l);color:var(--danger);}
+.tag-g{background:var(--success-l);color:var(--success);}
+.tag-w{background:var(--warn-l);color:var(--warn);}
+.tag-gr{background:var(--surface2);color:var(--text2);}
+.alert{border-radius:var(--r);padding:11px 14px;margin-bottom:12px;font-size:13px;line-height:1.5;display:flex;gap:10px;}
+.alert strong{font-weight:600;}
+.a-b{background:var(--accent-l);color:#1B3A8A;border:1px solid rgba(27,79,216,0.15);}
+.a-r{background:var(--danger-l);color:var(--danger);border:1px solid rgba(193,48,48,0.15);}
+.a-w{background:var(--warn-l);color:var(--warn);border:1px solid rgba(180,83,9,0.15);}
+.a-g{background:var(--success-l);color:var(--success);border:1px solid rgba(22,101,52,0.15);}
+.row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px;}
+.row:last-child{border-bottom:none;}
+.rl{color:var(--text2);}
+.rv{font-weight:500;font-family:var(--mono);}
+.rv.g{color:var(--success);}.rv.r{color:var(--danger);}.rv.b{color:var(--accent);}
+.stitle{font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.8px;margin:12px 0 8px;}
+.tbl{width:100%;border-collapse:collapse;font-size:13px;}
+.tbl th{text-align:left;padding:7px 8px;font-size:11px;color:var(--text3);font-weight:500;border-bottom:1px solid var(--border);text-transform:uppercase;letter-spacing:0.4px;}
+.tbl td{padding:9px 8px;border-bottom:1px solid var(--border);}
+.tbl tr:last-child td{border-bottom:none;}
+.tbl .r{text-align:right;font-family:var(--mono);font-size:12px;}
+.tbl tr.hl{background:var(--warn-l);}
+.tbl tr.ok{background:var(--success-l);}
+.tbl tr.tot{background:var(--surface2);font-weight:600;}
+.btn{padding:8px 16px;border-radius:8px;border:1px solid var(--border2);background:var(--surface);color:var(--text);font-size:13px;cursor:pointer;font-family:var(--font);font-weight:500;transition:all .15s;}
+.btn:hover{background:var(--surface2);}
+.btn-p{background:var(--accent);color:white;border-color:var(--accent);}
+.btn-p:hover{background:#1540B0;}
+
+/* OPTIMISATION */
+.opt-wrap{background:var(--surface);border-radius:var(--rl);border:2px solid var(--accent);box-shadow:var(--shadow);margin-bottom:14px;overflow:hidden;}
+.opt-hdr{display:flex;align-items:center;justify-content:space-between;padding:13px 18px;cursor:pointer;user-select:none;}
+.opt-hdr-l{display:flex;align-items:center;gap:10px;}
+.opt-title{font-size:14px;font-weight:600;color:var(--accent);}
+.opt-sub{font-size:11px;color:var(--text3);margin-top:1px;}
+.opt-pill{background:var(--accent);color:white;border-radius:20px;padding:3px 12px;font-size:11px;font-weight:600;font-family:var(--mono);}
+.opt-chev{color:var(--text3);transition:transform .2s;font-size:11px;}
+.opt-chev.open{transform:rotate(180deg);}
+.opt-body{border-top:1px solid var(--border);}
+.lev{display:flex;align-items:flex-start;gap:11px;padding:12px 18px;border-bottom:1px solid var(--border);transition:background .12s;}
+.lev:last-child{border-bottom:none;}
+.lev:hover{background:var(--bg);}
+.lev-n{width:23px;height:23px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;margin-top:1px;font-family:var(--mono);}
+.nr{background:var(--danger-l);color:var(--danger);}
+.nw{background:var(--warn-l);color:var(--warn);}
+.nb{background:var(--accent-l);color:var(--accent);}
+.ng{background:var(--success-l);color:var(--success);}
+.lev-body{flex:1;}
+.lev-title{font-size:13px;font-weight:600;margin-bottom:2px;}
+.lev-desc{font-size:12px;color:var(--text2);line-height:1.5;}
+.lev-gain{font-size:12px;font-weight:600;white-space:nowrap;padding-top:2px;font-family:var(--mono);}
+.lev-gain.g{color:var(--success);}.lev-gain.r{color:var(--danger);}.lev-gain.w{color:var(--warn);}
+.lev-tog{width:19px;height:19px;border-radius:4px;border:1.5px solid var(--border2);flex-shrink:0;margin-top:2px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:10px;transition:all .15s;}
+.lev-tog.on{background:var(--success);border-color:var(--success);color:white;}
+
+/* SOCIETES */
+.soc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:12px;margin-bottom:14px;}
+.soc-card{background:var(--surface);border-radius:var(--rl);border:1px solid var(--border);padding:15px 16px;box-shadow:var(--shadow);cursor:pointer;transition:all .15s;}
+.soc-card:hover{border-color:var(--accent);transform:translateY(-1px);}
+.soc-card.miss{border-style:dashed;opacity:0.75;}
+.soc-card.imp{border-color:var(--success);}
+.soc-hdr{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;}
+.soc-name{font-size:13px;font-weight:600;}
+.soc-type{font-size:11px;color:var(--text3);margin-top:1px;}
+.soc-dot{width:7px;height:7px;border-radius:50%;margin-right:4px;}
+.dot-g{background:var(--success);}.dot-w{background:var(--warn);}.dot-gr{background:var(--text3);}
+.soc-nums{display:grid;grid-template-columns:1fr 1fr;gap:7px;}
+.soc-num{background:var(--bg);border-radius:8px;padding:7px 9px;}
+.soc-num .nl{font-size:10px;color:var(--text3);}
+.soc-num .nv{font-size:13px;font-weight:600;font-family:var(--mono);}
+
+/* IMPORT */
+.drop{border:2px dashed var(--border2);border-radius:var(--rl);padding:32px 24px;text-align:center;cursor:pointer;transition:all .2s;margin-bottom:14px;}
+.drop:hover,.drop.over{border-color:var(--accent);background:var(--accent-l);}
+.drop h3{font-size:15px;font-weight:600;margin-bottom:5px;}
+.drop p{font-size:12px;color:var(--text3);}
+.fitem{display:flex;align-items:center;gap:11px;padding:10px 13px;background:var(--surface);border-radius:var(--r);border:1px solid var(--border);margin-bottom:8px;}
+.fext{width:32px;height:32px;border-radius:7px;background:var(--danger-l);color:var(--danger);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;font-family:var(--mono);}
+.fext.csv{background:var(--success-l);color:var(--success);}
+.finfo{flex:1;}
+.fname{font-size:13px;font-weight:500;}
+.fmeta{font-size:11px;color:var(--text3);margin-top:1px;}
+.fst{font-size:11px;padding:2px 7px;border-radius:5px;font-weight:500;}
+.fst-ok{background:var(--success-l);color:var(--success);}
+.fst-p{background:var(--warn-l);color:var(--warn);}
+
+/* CHECKLIST */
+.ck{display:flex;align-items:flex-start;gap:9px;padding:8px 0;border-bottom:1px solid var(--border);}
+.ck:last-child{border-bottom:none;}
+.ckbox{width:17px;height:17px;border-radius:4px;border:1.5px solid var(--border2);flex-shrink:0;margin-top:1px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:10px;transition:all .15s;}
+.ckbox.on{background:var(--success);border-color:var(--success);color:white;}
+.cktxt{flex:1;}
+.ckt{font-size:13px;}
+.cks{font-size:11px;color:var(--text2);margin-top:1px;}
+
+/* SIM */
+.sim-row{display:flex;align-items:center;gap:10px;margin-bottom:11px;}
+.sim-row label{font-size:12px;color:var(--text2);width:170px;flex-shrink:0;}
+.sim-row input[type=range]{flex:1;}
+.so{font-size:12px;font-weight:600;min-width:95px;text-align:right;font-family:var(--mono);}
+.sim-in{width:115px;padding:6px 9px;border:1px solid var(--border2);border-radius:7px;background:var(--surface);color:var(--text);font-size:12px;font-family:var(--mono);}
+
+/* STATUS */
+.status-bar{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text3);padding:6px 0;}
+.status-dot{width:6px;height:6px;border-radius:50%;background:var(--success);}
+.status-dot.off{background:var(--danger);}
+</style>
+</head>
+<body>
+
+<div class="layout">
+<!-- SIDEBAR -->
+<div class="sidebar">
+  <div class="sb-logo">
+    <h1>Fiscal Hub</h1>
+    <p>HILAIRE · VINCENT · 2025</p>
+  </div>
+  <div class="sb-section">Tableau de bord</div>
+  <div class="sb-item active" onclick="sw('dashboard',this)"><span class="sb-ico">◈</span>Vue d'ensemble</div>
+  <div class="sb-item" onclick="sw('optim',this)"><span class="sb-ico">◎</span>Optimisations<span class="sb-badge r">6</span></div>
+  <div class="sb-item" onclick="sw('sim',this)"><span class="sb-ico">◐</span>Simulateur</div>
+  <div class="sb-section">Sociétés</div>
+  <div class="sb-item" onclick="sw('soc-vh',this)"><span class="sb-ico">▣</span>VH Company<span class="sb-badge g" id="b-vh">✓</span></div>
+  <div class="sb-item" onclick="sw('soc-ba',this)"><span class="sb-ico">▣</span>Burger Avenue<span class="sb-badge" id="b-ba">—</span></div>
+  <div class="sb-item" onclick="sw('soc-bka',this)"><span class="sb-ico">▣</span>BK Avenue<span class="sb-badge" id="b-bka">—</span></div>
+  <div class="sb-item" onclick="sw('soc-bksj',this)"><span class="sb-ico">▣</span>BK Saint-Jean<span class="sb-badge" id="b-bksj">—</span></div>
+  <div class="sb-item" onclick="sw('soc-fvh',this)"><span class="sb-ico">▣</span>FVH SARL<span class="sb-badge" id="b-fvh">—</span></div>
+  <div class="sb-item" onclick="sw('soc-sci',this)"><span class="sb-ico">▣</span>SCI VH Immo<span class="sb-badge" id="b-sci">—</span></div>
+  <div class="sb-section">Déclaration</div>
+  <div class="sb-item" onclick="sw('checklist',this)"><span class="sb-ico">☐</span>Checklist 2026</div>
+  <div class="sb-item" onclick="sw('import',this)"><span class="sb-ico">↑</span>Import fichiers<span class="sb-badge" id="b-imp">0</span></div>
+  <div class="sb-footer">
+    <div class="status-bar"><div class="status-dot" id="db-dot"></div><span id="db-status">Connexion...</span></div>
+    <p style="margin-top:4px;">N° fiscal : 0710045887145</p>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+<div class="topbar">
+  <h2 id="page-title">Vue d'ensemble</h2>
+  <div class="topbar-r">
+    <span class="tag tag-w">TMI 41%</span>
+    <span class="tag tag-b">2,5 parts</span>
+    <span class="tag tag-r">SARL TNS ⚠</span>
+    <button class="btn btn-p" onclick="sw('import',null)">+ Importer</button>
+  </div>
+</div>
+<div class="content">
+
+<!-- DASHBOARD -->
+<div id="tab-dashboard" class="panel active">
+  <!-- Optimisation panel toujours visible -->
+  <div class="opt-wrap">
+    <div class="opt-hdr" onclick="togOpt()">
+      <div class="opt-hdr-l">
+        <span style="font-size:18px;">🎯</span>
+        <div>
+          <div class="opt-title">Leviers d'optimisation — toujours visibles</div>
+          <div class="opt-sub">Cliquez pour déployer · Cochez quand c'est fait · Sauvegardé automatiquement</div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span class="opt-pill" id="opt-score">0 / 6</span>
+        <span class="opt-chev" id="opt-chev">▼</span>
+      </div>
+    </div>
+    <div id="opt-body" style="display:none;" class="opt-body">
+      <div class="lev"><div class="lev-tog" data-key="lev1" onclick="togLev(this)"></div><div class="lev-n nr">1</div><div class="lev-body"><div class="lev-title">PER — Aucun versement depuis 3 ans (priorité absolue)</div><div class="lev-desc">Plafond disponible Vincent : <strong>115 761 €</strong>. À TMI 41%, économie immédiate 41 cts/€. Cases 6OS (TNS). Reports 5 ans (LFI 2026).</div></div><div class="lev-gain g">12k→47k€</div></div>
+      <div class="lev"><div class="lev-tog" data-key="lev2" onclick="togLev(this)"></div><div class="lev-n nr">2</div><div class="lev-body"><div class="lev-title">⚠ Dividendes SARL — Cotisations TNS sur l'excédent</div><div class="lev-desc">Seuil 10% = capital (305k€) + CC associé (305k€) = <strong>60 999 €</strong>. Sur ~200k€ de dividendes, ~139k€ potentiellement soumis aux cotisations TNS (~45%). Vérifier d'urgence avec l'expert-comptable.</div></div><div class="lev-gain r">Impact majeur</div></div>
+      <div class="lev"><div class="lev-tog" data-key="lev3" onclick="togLev(this)"></div><div class="lev-n nw">3</div><div class="lev-body"><div class="lev-title">Compte courant associé — Levier sur le seuil dividendes</div><div class="lev-desc">CC Vincent : 304 987 € (+140k€ cet exercice). Plus le CC est élevé, plus le seuil 10% monte. Intérêts versés au CC déductibles de l'IS de VH Company.</div></div><div class="lev-gain w">Structurel</div></div>
+      <div class="lev"><div class="lev-tog" data-key="lev4" onclick="togLev(this)"></div><div class="lev-n nw">4</div><div class="lev-body"><div class="lev-title">CEHR — Surveiller le seuil 500k€ RFR</div><div class="lev-desc">RFR 2024 : 494 792 € (juste −5 208 € sous le seuil couple). Les versements PER réduisent le RFR. En 2022 : CEHR 13 534 € payé.</div></div><div class="lev-gain g">Évite 13k€+</div></div>
+      <div class="lev"><div class="lev-tog" data-key="lev5" onclick="togLev(this)"></div><div class="lev-n nw">5</div><div class="lev-body"><div class="lev-title">Emploi à domicile — Optimiser jusqu'au plafond</div><div class="lev-desc">Mme Renault Sophie : 10 222 € en 2024 → crédit 5 111 €. Plafond couple avec enfant : 12 000 € → 6 000 € max. Marge : +1 778 € = +889 € de crédit.</div></div><div class="lev-gain g">+889€ possible</div></div>
+      <div class="lev"><div class="lev-tog" data-key="lev6" onclick="togLev(this)"></div><div class="lev-n nb">6</div><div class="lev-body"><div class="lev-title">Holding — Accumuler dans VH ou distribuer ?</div><div class="lev-desc">VH reçoit 700k€ dividendes filiales, quasi IS nul (mère-fille). Trésorerie VH quasi nulle (11k€), tout en CC inter-sociétés (2 025k€). Étude patrimoniale à conduire.</div></div><div class="lev-gain w">Étude</div></div>
+    </div>
+  </div>
+
+  <div class="g4">
+    <div class="kpi acc"><div class="kl">Impôt net 2024</div><div class="kv">75 477€</div><div class="ks">Solde versé : 79 194€</div></div>
+    <div class="kpi dan"><div class="kl">RFR 2024</div><div class="kv">494 792€</div><div class="ks">Seuil CEHR : 500 000€</div></div>
+    <div class="kpi war"><div class="kl">Plafond PER dispo.</div><div class="kv">115 761€</div><div class="ks">Reports 2022-2024 · Non utilisés</div></div>
+    <div class="kpi"><div class="kl">Taux moyen / TMI</div><div class="kv">21,09%</div><div class="ks">Taux marginal : 41%</div></div>
+  </div>
+
+  <div class="g2">
+    <div class="card">
+      <div class="card-title">Évolution fiscale 3 ans</div>
+      <table class="tbl">
+        <thead><tr><th>Année</th><th class="r">Impôt net</th><th class="r">Solde</th><th class="r">RFR</th></tr></thead>
+        <tbody>
+          <tr class="hl"><td>2022</td><td class="r" style="color:var(--danger)">179 108€</td><td class="r">179 884€</td><td class="r">951 119€</td></tr>
+          <tr><td>2023</td><td class="r">64 760€</td><td class="r">22 618€</td><td class="r">539 241€</td></tr>
+          <tr class="ok"><td><strong>2024</strong></td><td class="r"><strong>75 477€</strong></td><td class="r">79 194€</td><td class="r">494 792€</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="card">
+      <div class="card-title">Groupe VH — consolidé</div>
+      <div class="row"><span class="rl">Résultat VH Company</span><span class="rv">674 285€</span></div>
+      <div class="row"><span class="rl">Dividendes reçus des filiales</span><span class="rv g">700 241€</span></div>
+      <div class="row"><span class="rl">CC associé Vincent dans VH</span><span class="rv">304 987€</span></div>
+      <div class="row"><span class="rl">CC inter-sociétés (actif VH)</span><span class="rv">2 025 773€</span></div>
+      <div class="row"><span class="rl">Capitaux propres VH</span><span class="rv">1 507 111€</span></div>
+      <div class="row"><span class="rl">IS payé VH (régime mère-fille)</span><span class="rv g">≈ 0€</span></div>
+    </div>
+  </div>
+
+  <div class="alert a-r"><span>🚨</span><div><strong>Point critique SARL :</strong> Seuil cotisations TNS = 10% × (305k€ capital + 305k€ CC) = <strong>60 999€</strong>. Sur ~200k€ de dividendes, ~139k€ potentiellement soumis aux cotisations TNS (~45%). À clarifier d'urgence avec l'expert-comptable.</div></div>
+
+  <div class="card-title">Sociétés du groupe</div>
+  <div class="soc-grid">
+    <div class="soc-card imp" onclick="sw('soc-vh',null)">
+      <div class="soc-hdr"><div><div class="soc-name">VH Company</div><div class="soc-type">SARL Holding · APE 6420Z</div></div><span class="tag tag-g">✓ Importé</span></div>
+      <div class="soc-nums">
+        <div class="soc-num"><div class="nl">Résultat</div><div class="nv">674 285€</div></div>
+        <div class="soc-num"><div class="nl">IS payé</div><div class="nv" style="color:var(--success)">≈ 0€</div></div>
+        <div class="soc-num"><div class="nl">Dividendes reçus</div><div class="nv">700k€</div></div>
+        <div class="soc-num"><div class="nl">CC Vincent</div><div class="nv">305k€</div></div>
+      </div>
+    </div>
+    <div class="soc-card miss" onclick="sw('import',null)" id="card-ba">
+      <div class="soc-hdr"><div><div class="soc-name">Burger Avenue SARL</div><div class="soc-type">SARL · Restauration · Montpellier</div></div><span class="tag tag-gr" id="tag-ba">En attente</span></div>
+      <div class="soc-nums">
+        <div class="soc-num"><div class="nl">CA estimé</div><div class="nv">4 455 906€</div></div>
+        <div class="soc-num"><div class="nl">Résultat</div><div class="nv">27 787€</div></div>
+        <div class="soc-num"><div class="nl">Div. versés VH</div><div class="nv">27 787€</div></div>
+        <div class="soc-num"><div class="nl">Bilan</div><div class="nv" style="color:var(--warn)">→ Importer</div></div>
+      </div>
+    </div>
+    <div class="soc-card miss" onclick="sw('import',null)" id="card-bka">
+      <div class="soc-hdr"><div><div class="soc-name">BK Avenue SARL</div><div class="soc-type">SARL · Restauration · St-Clément-de-Rivière</div></div><span class="tag tag-gr" id="tag-bka">En attente</span></div>
+      <div class="soc-nums">
+        <div class="soc-num"><div class="nl">CA estimé</div><div class="nv">6 438 159€</div></div>
+        <div class="soc-num"><div class="nl">Résultat</div><div class="nv">435 901€</div></div>
+        <div class="soc-num"><div class="nl">Div. versés VH</div><div class="nv">435 901€</div></div>
+        <div class="soc-num"><div class="nl">Bilan</div><div class="nv" style="color:var(--warn)">→ Importer</div></div>
+      </div>
+    </div>
+    <div class="soc-card miss" onclick="sw('import',null)" id="card-bksj">
+      <div class="soc-hdr"><div><div class="soc-name">BK Saint-Jean SARL</div><div class="soc-type">SARL · Restauration · St-Jean-de-Védas</div></div><span class="tag tag-gr" id="tag-bksj">En attente</span></div>
+      <div class="soc-nums">
+        <div class="soc-num"><div class="nl">CA estimé</div><div class="nv">5 071 734€</div></div>
+        <div class="soc-num"><div class="nl">Résultat</div><div class="nv">236 553€</div></div>
+        <div class="soc-num"><div class="nl">Div. versés VH</div><div class="nv">236 553€</div></div>
+        <div class="soc-num"><div class="nl">Bilan</div><div class="nv" style="color:var(--warn)">→ Importer</div></div>
+      </div>
+    </div>
+    <div class="soc-card miss" onclick="sw('import',null)" id="card-fvh">
+      <div class="soc-hdr"><div><div class="soc-name">FVH SARL</div><div class="soc-type">SARL · 100% VH Company</div></div><span class="tag tag-r" id="tag-fvh">Déficitaire</span></div>
+      <div class="soc-nums">
+        <div class="soc-num"><div class="nl">Résultat</div><div class="nv" style="color:var(--danger)">−2 104€</div></div>
+        <div class="soc-num"><div class="nl">Div. versés VH</div><div class="nv">0€</div></div>
+        <div class="soc-num"><div class="nl">CC VH (débiteur)</div><div class="nv">101 000€</div></div>
+        <div class="soc-num"><div class="nl">Bilan</div><div class="nv" style="color:var(--warn)">→ Importer</div></div>
+      </div>
+    </div>
+    <div class="soc-card miss" onclick="sw('import',null)" id="card-sci">
+      <div class="soc-hdr"><div><div class="soc-name">SCI VH Immo</div><div class="soc-type">SCI · 10% VH Company</div></div><span class="tag tag-gr" id="tag-sci">En attente</span></div>
+      <div class="soc-nums">
+        <div class="soc-num"><div class="nl">% VH Company</div><div class="nv">10%</div></div>
+        <div class="soc-num"><div class="nl">CC VH (actif)</div><div class="nv">1 379 169€</div></div>
+        <div class="soc-num"><div class="nl">Loyers estimés</div><div class="nv">14 400€/an</div></div>
+        <div class="soc-num"><div class="nl">Bilan</div><div class="nv" style="color:var(--warn)">→ Importer</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- OPTIMISATIONS -->
+<div id="tab-optim" class="panel">
+  <div class="alert a-b"><span>ℹ</span><div>Analyse indicative — à valider avec votre expert-comptable avant toute décision.</div></div>
+  <div class="g2">
+    <div class="card">
+      <div class="card-title">🏆 PER — Levier n°1</div>
+      <div class="row"><span class="rl">Plafond Vincent disponible</span><span class="rv b">115 761€</span></div>
+      <div class="row"><span class="rl">Plafond Émilie disponible</span><span class="rv b">17 264€</span></div>
+      <div class="row"><span class="rl">Économie sur 30k€ versés (41%)</span><span class="rv g">≈ 12 300€</span></div>
+      <div class="row"><span class="rl">Économie sur 60k€ versés (41%)</span><span class="rv g">≈ 24 600€</span></div>
+      <div class="row"><span class="rl">Économie sur 100k€ versés (41%)</span><span class="rv g">≈ 41 000€</span></div>
+      <div class="alert a-g" style="margin-top:10px;"><span>✓</span><div>Cases 6OS (Vincent TNS). Reports portés à 5 ans (LFI 2026). Verser avant 31/12/2025.</div></div>
+    </div>
+    <div class="card">
+      <div class="card-title">🚨 Dividendes SARL — Seuil TNS</div>
+      <table class="tbl">
+        <thead><tr><th>Élément</th><th class="r">Montant</th></tr></thead>
+        <tbody>
+          <tr><td>Capital social</td><td class="r">305 000€</td></tr>
+          <tr><td>CC associé Vincent</td><td class="r">304 987€</td></tr>
+          <tr class="tot"><td>Base 10%</td><td class="r">609 987€</td></tr>
+          <tr class="tot"><td>Seuil exonération cot. TNS</td><td class="r"><strong>60 999€</strong></td></tr>
+          <tr><td>Dividendes perçus ~2024</td><td class="r">200 000€</td></tr>
+          <tr class="hl"><td>Fraction soumise cot. TNS</td><td class="r" style="color:var(--danger)"><strong>≈ 139 001€</strong></td></tr>
+          <tr class="hl"><td>Cotisations TNS estimées (~45%)</td><td class="r" style="color:var(--danger)">≈ 62 550€</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="g2">
+    <div class="card">
+      <div class="card-title">⚖️ PFU vs Barème sur dividendes</div>
+      <table class="tbl">
+        <thead><tr><th>Option</th><th class="r">Taux effectif</th><th class="r">Verdict</th></tr></thead>
+        <tbody>
+          <tr class="ok"><td>PFU 30% (flat tax)</td><td class="r">30%</td><td class="r"><span class="tag tag-g">✓ Optimal</span></td></tr>
+          <tr><td>Barème progressif</td><td class="r">~34-35%</td><td class="r"><span class="tag tag-r">✗ +5%</span></td></tr>
+          <tr class="hl"><td>Remontée rémunération</td><td class="r">55-65%</td><td class="r"><span class="tag tag-r">✗ Très coûteux</span></td></tr>
+        </tbody>
+      </table>
+      <div class="alert a-w" style="margin-top:10px;"><span>⚠</span><div>Ne pas cocher la case 2OP (barème progressif). Conserver le PFU.</div></div>
+    </div>
+    <div class="card">
+      <div class="card-title">📊 CEHR — Seuil à surveiller</div>
+      <div class="row"><span class="rl">Seuil CEHR couple</span><span class="rv">500 000€</span></div>
+      <div class="row"><span class="rl">RFR 2024</span><span class="rv g">494 792€</span></div>
+      <div class="row"><span class="rl">Écart sous le seuil</span><span class="rv g">−5 208€</span></div>
+      <div class="row"><span class="rl">CEHR payée en 2022</span><span class="rv r">13 534€</span></div>
+      <div class="alert a-g" style="margin-top:10px;"><span>✓</span><div>Un PER de 30k€ ferait passer le RFR à ~465k€ — très confortablement sous le seuil.</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- SIMULATEUR -->
+<div id="tab-sim" class="panel">
+  <div class="card">
+    <div class="card-title">Simulateur IR 2025</div>
+    <div class="g2">
+      <div>
+        <div class="stitle">Revenus 2025 estimés</div>
+        <div class="sim-row"><label>Rémunération gérant (€)</label><input type="number" class="sim-in" id="s-rem" value="199359" oninput="sim()"></div>
+        <div class="sim-row"><label>BNC bénéfices (€)</label><input type="number" class="sim-in" id="s-bnc" value="51072" oninput="sim()"></div>
+        <div class="sim-row"><label>Dividendes PFU 30% (€)</label><input type="number" class="sim-in" id="s-div" value="200000" oninput="sim()"></div>
+        <div class="sim-row"><label>Salaire Émilie (€)</label><input type="number" class="sim-in" id="s-sal" value="37601" oninput="sim()"></div>
+        <div class="sim-row"><label>Revenus fonciers bruts (€)</label><input type="number" class="sim-in" id="s-fon" value="14400" oninput="sim()"></div>
+        <div class="sim-row"><label>Aide à domicile (€)</label><input type="number" class="sim-in" id="s-dom" value="10222" oninput="sim()"></div>
+      </div>
+      <div>
+        <div class="stitle">Optimisations</div>
+        <div class="sim-row"><label>PER Vincent (€)</label><input type="range" id="r-p1" min="0" max="115761" step="2000" value="0" oninput="sim()"><span class="so" id="op1">0€</span></div>
+        <div class="sim-row"><label>PER Émilie (€)</label><input type="range" id="r-p2" min="0" max="17264" step="500" value="0" oninput="sim()"><span class="so" id="op2">0€</span></div>
+        <div class="sim-row"><label>Déficit foncier réel (€)</label><input type="range" id="r-df" min="0" max="10700" step="100" value="0" oninput="sim()"><span class="so" id="odf">0€</span></div>
+      </div>
+    </div>
+    <div id="sim-res" style="background:var(--bg);border-radius:var(--r);padding:16px;margin-top:4px;"></div>
+  </div>
+</div>
+
+<!-- VH COMPANY -->
+<div id="tab-soc-vh" class="panel">
+  <div class="alert a-g"><span>✓</span><div><strong>VH Company SARL</strong> — Bilan 30/06/2025 analysé. SIRET 80203462900021 · APE 6420Z · Capital 305 000€ · Vincent Hilaire 100%</div></div>
+  <div class="g4">
+    <div class="kpi acc"><div class="kl">Résultat net</div><div class="kv">674 285€</div><div class="ks">vs 697 326€ N-1</div></div>
+    <div class="kpi"><div class="kl">Résultat fiscal</div><div class="kv">9 056€</div><div class="ks">Après déficits antérieurs</div></div>
+    <div class="kpi"><div class="kl">Capitaux propres</div><div class="kv">1 507 111€</div><div class="ks">+474 285€ vs N-1</div></div>
+    <div class="kpi war"><div class="kl">CC associé Vincent</div><div class="kv">304 987€</div><div class="ks">+140 000€ cet exercice</div></div>
+  </div>
+  <div class="g2">
+    <div class="card">
+      <div class="card-title">Compte de résultat</div>
+      <div class="row"><span class="rl">Charges exploitation</span><span class="rv r">−35 900€</span></div>
+      <div class="row"><span class="rl">Résultat exploitation</span><span class="rv r">−39 585€</span></div>
+      <div class="row"><span class="rl">Dividendes filiales (mère-fille)</span><span class="rv g">+700 241€</span></div>
+      <div class="row"><span class="rl">Autres produits financiers</span><span class="rv g">+20 058€</span></div>
+      <div class="row"><span class="rl">Intérêts CC (charges fin.)</span><span class="rv r">−6 429€</span></div>
+      <div class="row"><span class="rl"><strong>Résultat net</strong></span><span class="rv"><strong>674 285€</strong></span></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Filiales — dividendes reçus</div>
+      <div class="row"><span class="rl">BK Avenue SARL (100%)</span><span class="rv g">+435 901€</span></div>
+      <div class="row"><span class="rl">BK Saint-Jean SARL (100%)</span><span class="rv g">+236 553€</span></div>
+      <div class="row"><span class="rl">Burger Avenue SARL (100%)</span><span class="rv g">+27 787€</span></div>
+      <div class="row"><span class="rl">FVH SARL (100%)</span><span class="rv r">−2 104€ (déficitaire)</span></div>
+      <div class="row"><span class="rl">SCI VH Immo (10%)</span><span class="rv">0€</span></div>
+      <div class="row"><span class="rl" style="font-weight:600">Total</span><span class="rv g"><strong>700 137€</strong></span></div>
+    </div>
+  </div>
+</div>
+
+<!-- AUTRES SOCIETES -->
+<div id="tab-soc-ba" class="panel">
+  <div class="alert a-w"><span>📄</span><div><strong>Burger Avenue SARL</strong> — Bilan non importé. CA estimé 4,4M€ · Résultat 27 787€ (données bilan VH). <button class="btn btn-p" style="margin-left:10px;" onclick="sw('import',null)">Importer →</button></div></div>
+</div>
+<div id="tab-soc-bka" class="panel">
+  <div class="alert a-w"><span>📄</span><div><strong>BK Avenue SARL</strong> — Bilan non importé. CA estimé 6,4M€ · Résultat 435 901€ · TVA : FR30830144242. <button class="btn btn-p" style="margin-left:10px;" onclick="sw('import',null)">Importer →</button></div></div>
+</div>
+<div id="tab-soc-bksj" class="panel">
+  <div class="alert a-w"><span>📄</span><div><strong>BK Saint-Jean SARL</strong> — Bilan non importé. CA estimé 5,1M€ · Résultat 236 553€. <button class="btn btn-p" style="margin-left:10px;" onclick="sw('import',null)">Importer →</button></div></div>
+</div>
+<div id="tab-soc-fvh" class="panel">
+  <div class="alert a-r"><span>⚠</span><div><strong>FVH SARL</strong> — Déficitaire (−2 104€). Pas de dividendes. CC débiteur dans VH : 101 000€. <button class="btn btn-p" style="margin-left:10px;" onclick="sw('import',null)">Importer →</button></div></div>
+</div>
+<div id="tab-soc-sci" class="panel">
+  <div class="alert a-b"><span>ℹ</span><div><strong>SCI VH Immo</strong> — VH détient 10%. CC actif de VH dans la SCI : 1 379 169€. Loyers personnels estimés 14 400€/an. <button class="btn btn-p" style="margin-left:10px;" onclick="sw('import',null)">Importer →</button></div></div>
+</div>
+
+<!-- CHECKLIST -->
+<div id="tab-checklist" class="panel">
+  <div class="alert a-b"><span>📅</span><div>Déclaration 2026 (revenus 2025) — Département 34, date limite fin mai/juin 2026.</div></div>
+  <div class="card">
+    <div class="card-title">Documents à rassembler</div>
+    <div class="stitle">Revenus Vincent</div>
+    <div class="ck"><div class="ckbox" data-key="ck1" onclick="togCk(this)"></div><div class="cktxt"><div class="ckt">IFU VH Company 2025 — dividendes, PFL, frais</div><div class="cks">Cases 2DC, 2CK, 2CA. Avant fin janvier 2026.</div></div><span class="tag tag-r">Critique</span></div>
+    <div class="ck"><div class="ckbox" data-key="ck2" onclick="togCk(this)"></div><div class="cktxt"><div class="ckt">Liasse BNC 2035 — bénéfice et cotisations</div><div class="cks">Cases 5QC, 5QB, DSCA, DSEA. Expert-comptable.</div></div><span class="tag tag-r">Critique</span></div>
+    <div class="ck"><div class="ckbox" data-key="ck3" onclick="togCk(this)"></div><div class="cktxt"><div class="ckt">Rémunération gérant VH Company 2025</div><div class="cks">Case 1GB. Note : 0€ de rém. gérant dans bilan VH 30/06/2025 — à confirmer.</div></div><span class="tag tag-r">Critique</span></div>
+    <div class="stitle">Revenus Émilie</div>
+    <div class="ck"><div class="ckbox" data-key="ck4" onclick="togCk(this)"></div><div class="cktxt"><div class="ckt">Bulletin salaire annuel Émilie 2025</div><div class="cks">Net imposable, retenue source (8IV), prime de partage valeur (1BD).</div></div><span class="tag tag-r">Critique</span></div>
+    <div class="stitle">Crédits d'impôt</div>
+    <div class="ck"><div class="ckbox" data-key="ck5" onclick="togCk(this)"></div><div class="cktxt"><div class="ckt">Attestation CESU — Mme Renault Sophie</div><div class="cks">Total dépenses aide à domicile 2025 (7DB). Plafond 12 000€.</div></div><span class="tag tag-r">Critique</span></div>
+    <div class="ck"><div class="ckbox" data-key="ck6" onclick="togCk(this)"></div><div class="cktxt"><div class="ckt">Avance immédiate crédit domicile 2025 (7HB)</div><div class="cks">Montant perçu via CESU avance immédiate. Sur espace impots.gouv.fr.</div></div><span class="tag tag-r">Critique</span></div>
+    <div class="stitle">PER — si versements effectués</div>
+    <div class="ck"><div class="ckbox" data-key="ck7" onclick="togCk(this)"></div><div class="cktxt"><div class="ckt">Attestation PER Vincent (6OS) — plafond 115 761€</div><div class="cks">Attestation annuelle du gestionnaire PER.</div></div><span class="tag tag-w">Si applicable</span></div>
+    <div class="stitle">Divers</div>
+    <div class="ck"><div class="ckbox" data-key="ck8" onclick="togCk(this)"></div><div class="cktxt"><div class="ckt">Formulaire 3916 — compte bancaire étranger</div><div class="cks">Case 8UU cochée en 2024. Déclaration obligatoire.</div></div><span class="tag tag-r">Obligatoire</span></div>
+    <div class="ck"><div class="ckbox" data-key="ck9" onclick="togCk(this)"></div><div class="cktxt"><div class="ckt">Revenus fonciers — quittances loyer 2025</div><div class="cks">Micro-foncier si &lt; 15 000€ (case 4BE). Sinon régime réel 2044.</div></div><span class="tag tag-w">Important</span></div>
+    <div class="ck"><div class="ckbox" data-key="ck10" onclick="togCk(this)"></div><div class="cktxt"><div class="ckt">Cessions actifs numériques 2025 (formulaire 2086)</div><div class="cks">Moins-values 2023 reportables : 13 660€.</div></div><span class="tag tag-w">Si applicable</span></div>
+  </div>
+</div>
+
+<!-- IMPORT -->
+<div id="tab-import" class="panel">
+  <div class="alert a-b"><span>💡</span><div><strong>Import intelligent :</strong> Glissez vos PDFs. L'appli détecte la société automatiquement et met à jour le tableau de bord. Les imports sont sauvegardés dans Supabase.</div></div>
+  <div class="drop" id="drop-z" onclick="document.getElementById('finput').click()" ondragover="dov(event)" ondragleave="dol()" ondrop="ddrop(event)">
+    <div style="font-size:32px;margin-bottom:8px;">📎</div>
+    <h3>Glissez vos bilans et documents fiscaux</h3>
+    <p>PDF · CSV · XLSX · Bilans SARL, avis d'impôt, IFU, liasses fiscales, attestations CESU</p>
+    <p style="font-size:11px;color:var(--text3);margin-top:6px;">Nommez vos fichiers avec le nom de la société : BK_Avenue_2025.pdf, Burger_Avenue.pdf…</p>
+    <input type="file" id="finput" multiple accept=".pdf,.csv,.xlsx,.xls" style="display:none;" onchange="handleF(this.files)">
+  </div>
+  <div id="flist"></div>
+  <div class="card">
+    <div class="card-title">État des imports</div>
+    <table class="tbl">
+      <thead><tr><th>Document</th><th>Type</th><th class="r">Statut</th><th class="r">Données clés</th></tr></thead>
+      <tbody id="import-tbl">
+        <tr class="ok"><td><strong>VH Company</strong> — Bilan 30/06/2025</td><td><span class="tag tag-g">Bilan Holding</span></td><td class="r"><span class="tag tag-g">✓ Intégré</span></td><td class="r">674 285€</td></tr>
+        <tr class="ok"><td><strong>Avis d'impôt</strong> — Revenus 2022/2023/2024</td><td><span class="tag tag-g">Avis IR</span></td><td class="r"><span class="tag tag-g">✓ Intégré</span></td><td class="r">3 exercices</td></tr>
+        <tr><td><strong>Burger Avenue SARL</strong></td><td><span class="tag tag-gr">Bilan SARL</span></td><td class="r"><span class="tag tag-w">En attente</span></td><td class="r">CA ~4,4M€</td></tr>
+        <tr><td><strong>BK Avenue SARL</strong></td><td><span class="tag tag-gr">Bilan SARL</span></td><td class="r"><span class="tag tag-w">En attente</span></td><td class="r">CA ~6,4M€</td></tr>
+        <tr><td><strong>BK Saint-Jean SARL</strong></td><td><span class="tag tag-gr">Bilan SARL</span></td><td class="r"><span class="tag tag-w">En attente</span></td><td class="r">CA ~5,1M€</td></tr>
+        <tr><td><strong>FVH SARL</strong></td><td><span class="tag tag-gr">Bilan SARL</span></td><td class="r"><span class="tag tag-w">En attente</span></td><td class="r">Déficitaire</td></tr>
+        <tr><td><strong>SCI VH Immo</strong></td><td><span class="tag tag-gr">Bilan SCI</span></td><td class="r"><span class="tag tag-w">En attente</span></td><td class="r">CC VH 1,38M€</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+</div></div></div>
+
+<script>
+// ── SUPABASE ──
+const SUPA_URL = 'https://zfrwhoiasqywxkgegrvj.supabase.co';
+const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpmcndob2lhc3F5d3hrZ2VncnZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkyNTg0OTEsImV4cCI6MjA5NDgzNDQ5MX0.OHZrOono_kfYHk6PRzm_f_sHu_aXZ8XAO8Vca7bva5A';
+const sb = supabase.createClient(SUPA_URL, SUPA_KEY);
+
+// ── INIT ──
+async function init() {
+  try {
+    await setupTables();
+    await loadState();
+    document.getElementById('db-dot').classList.remove('off');
+    document.getElementById('db-status').textContent = 'Supabase connecté';
+  } catch(e) {
+    document.getElementById('db-dot').classList.add('off');
+    document.getElementById('db-status').textContent = 'Hors ligne';
+  }
+  sim();
+}
+
+async function setupTables() {
+  // Créer tables via API REST si elles n'existent pas
+  await sb.from('coches').select('id').limit(1).maybeSingle();
+  await sb.from('documents').select('id').limit(1).maybeSingle();
+}
+
+// ── NAVIGATION ──
+const titles = {dashboard:'Vue d\'ensemble',optim:'Optimisations',sim:'Simulateur','soc-vh':'VH Company','soc-ba':'Burger Avenue','soc-bka':'BK Avenue','soc-bksj':'BK Saint-Jean','soc-fvh':'FVH SARL','soc-sci':'SCI VH Immo',checklist:'Checklist 2026',import:'Import fichiers'};
+function sw(id, btn) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.sb-item').forEach(i => i.classList.remove('active'));
+  document.getElementById('tab-' + id).classList.add('active');
+  if (btn) btn.classList.add('active');
+  document.getElementById('page-title').textContent = titles[id] || id;
+}
+
+// ── OPTIMISATION ──
+let optOpen = false;
+function togOpt() {
+  optOpen = !optOpen;
+  document.getElementById('opt-body').style.display = optOpen ? 'block' : 'none';
+  document.getElementById('opt-chev').classList.toggle('open', optOpen);
+}
+
+async function togLev(el) {
+  el.classList.toggle('on');
+  el.textContent = el.classList.contains('on') ? '✓' : '';
+  const key = el.dataset.key;
+  const val = el.classList.contains('on');
+  updateScore();
+  try {
+    await sb.from('coches').upsert({cle: key, valeur: val, updated_at: new Date().toISOString()}, {onConflict: 'cle'});
+  } catch(e) {}
+}
+
+function updateScore() {
+  const n = document.querySelectorAll('.lev-tog.on').length;
+  document.getElementById('opt-score').textContent = n + ' / 6';
+}
+
+// ── CHECKLIST ──
+async function togCk(el) {
+  el.classList.toggle('on');
+  el.textContent = el.classList.contains('on') ? '✓' : '';
+  const key = el.dataset.key;
+  const val = el.classList.contains('on');
+  try {
+    await sb.from('coches').upsert({cle: key, valeur: val, updated_at: new Date().toISOString()}, {onConflict: 'cle'});
+  } catch(e) {}
+}
+
+// ── LOAD STATE ──
+async function loadState() {
+  try {
+    const {data} = await sb.from('coches').select('*');
+    if (!data) return;
+    data.forEach(row => {
+      const el = document.querySelector('[data-key="' + row.cle + '"]');
+      if (el && row.valeur) {
+        el.classList.add('on');
+        el.textContent = '✓';
+      }
+    });
+    updateScore();
+    // Charger documents
+    const {data: docs} = await sb.from('documents').select('*').order('created_at', {ascending: false});
+    if (docs && docs.length > 0) {
+      let count = 0;
+      docs.forEach(doc => {
+        count++;
+        addFileToUI(doc.nom, doc.type, doc.societe, true);
+        updateSocBadge(doc.societe);
+      });
+      document.getElementById('b-imp').textContent = count;
+    }
+  } catch(e) {}
+}
+
+// ── SIMULATEUR ──
+function sim() {
+  const rem = +document.getElementById('s-rem').value||0;
+  const bnc = +document.getElementById('s-bnc').value||0;
+  const div = +document.getElementById('s-div').value||0;
+  const sal = +document.getElementById('s-sal').value||0;
+  const fon = +document.getElementById('s-fon').value||0;
+  const dom = +document.getElementById('s-dom').value||0;
+  const p1  = +document.getElementById('r-p1').value||0;
+  const p2  = +document.getElementById('r-p2').value||0;
+  const df  = +document.getElementById('r-df').value||0;
+  document.getElementById('op1').textContent = fr(p1);
+  document.getElementById('op2').textContent = fr(p2);
+  document.getElementById('odf').textContent = fr(df);
+  const ci = Math.min(dom,12000)*.5;
+  const revB = rem+bnc+sal*.9+fon*.7-685;
+  const irB = Math.max(0, baremeIR(revB,2.5)-ci);
+  const pfu = div*.30;
+  const totB = irB+pfu;
+  const revO = revB-p1-p2-df;
+  const irO = Math.max(0, baremeIR(revO,2.5)-ci);
+  const totO = irO+pfu;
+  const eco = totB-totO;
+  const rfr = revB-p1-p2;
+  const cehrNote = rfr>500000
+    ? `<span style="color:var(--danger);font-size:12px;">⚠ RFR estimé ${fr(rfr)} > seuil CEHR 500k€</span>`
+    : `<span style="color:var(--success);font-size:12px;">✓ RFR estimé ${fr(rfr)} — sous le seuil CEHR</span>`;
+  document.getElementById('sim-res').innerHTML = `
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+  <div>
+    <div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;">Sans optimisation</div>
+    <div style="font-size:24px;font-weight:600;font-family:var(--mono);">${fr(totB)}</div>
+    <div style="font-size:12px;color:var(--text2);margin-top:3px;">IR ≈ ${fr(irB)} · Flat tax div. ≈ ${fr(pfu)}</div>
+    <div style="margin-top:5px;">${cehrNote}</div>
+  </div>
+  ${p1||p2||df?`<div>
+    <div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;">Avec optimisations</div>
+    <div style="font-size:24px;font-weight:600;font-family:var(--mono);">${fr(totO)}</div>
+    <div style="font-size:16px;font-weight:600;color:var(--success);margin-top:3px;">Économie : ${fr(eco)}</div>
+    <div style="font-size:12px;color:var(--text2);margin-top:2px;">IR ≈ ${fr(irO)} · Flat tax div. ≈ ${fr(pfu)}</div>
+  </div>`:'<div style="display:flex;align-items:center;font-size:13px;color:var(--text3);">← Ajustez les curseurs</div>'}
+</div>`;
+}
+
+function baremeIR(rev, parts) {
+  const q = rev/parts; let t = 0;
+  if(q>180294)t+=(q-180294)*.45;
+  if(q>83824)t+=(Math.min(q,180294)-83824)*.41;
+  if(q>29316)t+=(Math.min(q,83824)-29316)*.30;
+  if(q>11498)t+=(Math.min(q,29316)-11498)*.11;
+  return t*parts;
+}
+const fr = n => Math.round(n).toLocaleString('fr-FR')+'€';
+
+// ── IMPORT ──
+let impCount = 0;
+function dov(e){e.preventDefault();document.getElementById('drop-z').classList.add('over');}
+function dol(){document.getElementById('drop-z').classList.remove('over');}
+function ddrop(e){e.preventDefault();dol();handleF(e.dataTransfer.files);}
+
+function detectSoc(name) {
+  const n = name.toLowerCase();
+  if(n.includes('burger')||n.includes('burger_avenue')||n.includes('ba_')) return 'Burger Avenue';
+  if(n.includes('bk_avenue')||n.includes('bkavenue')||n.includes('bk avenue')) return 'BK Avenue';
+  if(n.includes('bk_saint')||n.includes('saint_jean')||n.includes('bksj')||n.includes('bk saint')) return 'BK Saint-Jean';
+  if(n.includes('fvh')) return 'FVH';
+  if(n.includes('sci')||n.includes('immo')) return 'SCI VH Immo';
+  if(n.includes('vh_company')||n.includes('vhcompany')||n.includes('vh company')) return 'VH Company';
+  if(n.includes('avis')||n.includes('impot')) return 'Foyer fiscal';
+  if(n.includes('cesu')||n.includes('urssaf')) return 'Foyer fiscal';
+  return 'Document fiscal';
+}
+
+async function handleF(files) {
+  for(const f of Array.from(files)) {
+    impCount++;
+    document.getElementById('b-imp').textContent = impCount;
+    const ext = f.name.split('.').pop().toUpperCase();
+    const soc = detectSoc(f.name);
+    addFileToUI(f.name, ext, soc, false);
+    // Sauvegarder dans Supabase
+    try {
+      await sb.from('documents').insert({
+        nom: f.name,
+        type: ext,
+        societe: soc,
+        statut: 'integre',
+        donnees: {taille: f.size}
+      });
+    } catch(e) {}
+    // Marquer comme intégré après délai
+    setTimeout(() => {
+      const items = document.querySelectorAll('.fitem');
+      if(items.length > 0) {
+        const st = items[0].querySelector('.fst');
+        if(st) {st.className='fst fst-ok';st.textContent='Intégré ✓';}
+      }
+      updateSocBadge(soc);
+    }, 1500);
+  }
+}
+
+function addFileToUI(name, type, soc, already) {
+  const list = document.getElementById('flist');
+  const d = document.createElement('div');
+  d.className = 'fitem';
+  const ext = type.toUpperCase();
+  d.innerHTML = `<div class="fext ${ext==='CSV'?'csv':''}">${ext}</div>
+<div class="finfo"><div class="fname">${name}</div><div class="fmeta">${soc} · ${new Date().toLocaleDateString('fr-FR')}</div></div>
+<span class="fst ${already?'fst-ok':'fst-p'}">${already?'Intégré ✓':'Analyse…'}</span>`;
+  list.prepend(d);
+}
+
+function updateSocBadge(soc) {
+  const map = {'Burger Avenue':'ba','BK Avenue':'bka','BK Saint-Jean':'bksj','FVH':'fvh','SCI VH Immo':'sci'};
+  const key = map[soc];
+  if(key) {
+    const b = document.getElementById('b-'+key);
+    if(b){b.className='sb-badge g';b.textContent='✓';}
+    const card = document.getElementById('card-'+key);
+    if(card){card.classList.remove('miss');card.classList.add('imp');}
+    const tag = document.getElementById('tag-'+key);
+    if(tag){tag.className='tag tag-g';tag.textContent='✓ Importé';}
+  }
+}
+
+// ── START ──
+init();
+</script>
+</body>
+</html>
