@@ -997,13 +997,12 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:14
 
 <!-- IMPORT -->
 <div id="tab-import" class="panel">
-  <div class="alert a-b"><span>💡</span><div><strong>Classement automatique.</strong> Dépose ton fichier : l'appli reconnaît son type et la société d'après son <strong>nom</strong> et le range au bon endroit, sans rien choisir. Garde un nom parlant (ex : <strong>Bilan_BK_Avenue_2025.pdf</strong>, <strong>Taxe_fonciere_Auchan.pdf</strong>). <strong>Pour que Claude lise le contenu et en extraie les chiffres, envoie-le aussi dans le chat.</strong></div></div>
+  <div class="alert a-b"><span>💡</span><div><strong>Point d'entrée unique.</strong> Choisis la catégorie, dépose ton fichier : il est archivé ici, classé au bon endroit. <strong>Pour que Claude lise et analyse un document, envoie-le aussi dans le chat</strong> — l'appli archive, le chat analyse.</div></div>
 
   <div class="card">
-    <div class="card-title">Catégorie de repli <span style="font-weight:400;color:var(--text3);font-size:12px;">(utilisée seulement si le nom n'est pas reconnu)</span></div>
+    <div class="card-title">Catégorie du document</div>
     <div class="sim-row" style="flex-direction:column;align-items:stretch;gap:4px;">
       <select id="imp-cat" class="sim-in" style="width:100%;font-family:var(--font);">
-        <option value="Autre" selected>Détection automatique (recommandé)</option>
         <option value="Impôts">Impôts — avis, déclaration, IFU, liasse</option>
         <option value="Assurance habitation">Assurance — habitation</option>
         <option value="Assurance auto">Assurance — auto</option>
@@ -1017,6 +1016,51 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:14
         <option value="Autre">Autre</option>
       </select>
     </div>
+  </div>
+
+  <!-- ═══ IMPORT PAR SOCIÉTÉ (multi-fichiers, multi-exercices) ═══ -->
+  <div class="card" id="impsoc-card">
+    <div class="card-title">🏢 Import par société — bilans & liasses sur plusieurs exercices</div>
+    <div class="alert a-b" style="margin-bottom:12px;"><span>💡</span><div>Sélectionne une société, choisis l'exercice, puis dépose <strong>autant de fichiers que tu veux</strong> (bilan, liasse 2065, FEC, grand livre…). Les fichiers sont stockés et rangés par société et par année, prêts pour l'analyse complète. On traite ensuite chaque société une par une.</div></div>
+
+    <div class="g3" style="margin-bottom:12px;">
+      <div class="sim-row" style="flex-direction:column;align-items:stretch;gap:4px;">
+        <label style="width:auto;">Société</label>
+        <select id="is-soc" class="sim-in" style="width:100%;font-family:var(--font);" onchange="isRenderFiles()">
+          <option value="vh">VH Company (holding)</option>
+          <option value="ba">Burger Avenue 500</option>
+          <option value="bka">BK Avenue (526)</option>
+          <option value="bksj">BK Saint-Jean (509)</option>
+          <option value="fvh">FVH SARL</option>
+          <option value="sci">SCI VH Immo</option>
+        </select>
+      </div>
+      <div class="sim-row" style="flex-direction:column;align-items:stretch;gap:4px;">
+        <label style="width:auto;">Exercice</label>
+        <select id="is-year" class="sim-in" style="width:100%;font-family:var(--font);"></select>
+      </div>
+      <div class="sim-row" style="flex-direction:column;align-items:stretch;gap:4px;">
+        <label style="width:auto;">Type de document</label>
+        <select id="is-doctype" class="sim-in" style="width:100%;font-family:var(--font);">
+          <option value="Bilan">Bilan (actif/passif)</option>
+          <option value="Compte de résultat">Compte de résultat</option>
+          <option value="Liasse fiscale">Liasse fiscale (2065/2033…)</option>
+          <option value="FEC">FEC</option>
+          <option value="Grand livre">Grand livre</option>
+          <option value="Balance">Balance</option>
+          <option value="Annexe">Annexe / autres</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="drop" id="is-drop" onclick="document.getElementById('is-finput').click()" ondragover="isDov(event)" ondragleave="isDol()" ondrop="isDrop(event)" style="padding:22px;">
+      <div style="font-size:28px;margin-bottom:6px;">🏢📎</div>
+      <h3 id="is-drop-title">Glisse les fichiers de la société ici</h3>
+      <p style="font-size:12px;">PDF · XLSX · CSV · JPG — plusieurs fichiers acceptés</p>
+      <input type="file" id="is-finput" multiple accept=".pdf,.csv,.xlsx,.xls,.jpg,.jpeg,.png" style="display:none;" onchange="isHandle(this.files)">
+    </div>
+
+    <div id="is-list" style="margin-top:12px;"></div>
   </div>
 
   <div class="drop" id="drop-z" onclick="document.getElementById('finput').click()" ondragover="dov(event)" ondragleave="dol()" ondrop="ddrop(event)">
@@ -1629,7 +1673,6 @@ function renderDocs(b) {
     </div>
     <div style="display:flex;align-items:center;gap:12px;margin-top:10px;">
       <button class="btn btn-p" onclick="uploadBatDoc()">+ Ajouter le document</button>
-      <button class="btn" onclick="testStorage()">🔒 Tester le stockage</button>
       <span id="d-status" style="font-size:12px;color:var(--text3);"></span>
     </div>
   </div>`;
@@ -1688,32 +1731,7 @@ async function delDoc(i) {
   renderDocs(b);
 }
 
-// Vérifie que le stockage durable (Supabase Storage) fonctionne réellement :
-// upload d'un fichier test → relecture → nettoyage. Donne un verdict clair.
-async function testStorage() {
-  const status = document.getElementById('d-status');
-  if(status) status.textContent = 'Test du stockage en cours…';
-  const testPath = '_diagnostic/test_'+Date.now()+'.txt';
-  const blob = new Blob(['ok'], {type:'text/plain'});
-  try {
-    const up = await sb.storage.from(DOC_BUCKET).upload(testPath, blob, {upsert:true});
-    if(up.error) throw up.error;
-    // relecture de l'URL publique pour confirmer l'accès
-    const {data:pub} = sb.storage.from(DOC_BUCKET).getPublicUrl(testPath);
-    // nettoyage du fichier test
-    try { await sb.storage.from(DOC_BUCKET).remove([testPath]); } catch(e){}
-    if(status) status.innerHTML = '<span style="color:var(--success);">✓ Stockage OK — vos PDF sont bien conservés durablement sur Supabase (bucket « '+DOC_BUCKET+' »).</span>';
-  } catch(e) {
-    const msg = (e && e.message) ? e.message : '';
-    if(/bucket|not found|404/i.test(msg)) {
-      if(status) status.innerHTML = '<span style="color:var(--danger);">✗ Le bucket « '+DOC_BUCKET+' » n\u2019existe pas encore. Tes fichiers ne sont PAS conservés. Crée-le dans Supabase → Storage → New bucket → nom « '+DOC_BUCKET+' » → coche Public, puis relance ce test.</span>';
-    } else if(/row-level|policy|permission|403|unauthorized/i.test(msg)) {
-      if(status) status.innerHTML = '<span style="color:var(--danger);">✗ Le bucket existe mais une règle d\u2019accès (RLS) bloque l\u2019envoi. Dans Supabase → Storage → '+DOC_BUCKET+' → Policies, autorise l\u2019upload, puis relance le test.</span>';
-    } else {
-      if(status) status.innerHTML = '<span style="color:var(--danger);">✗ Le stockage ne répond pas : '+msg+'</span>';
-    }
-  }
-}
+// Pousse un fichier (blob) vers Dropbox. Renvoie true si OK.
 // Le chemin Dropbox reflète le rangement : /Fiscal_Hub/Batiments/<bâtiment>/<catégorie>/<nom>
 async function pushDropbox(blob, batNom, cat, fileName) {
   if(!(DROPBOX_TOKEN && DROPBOX_TOKEN.length > 20)) return false;
@@ -2539,38 +2557,34 @@ function ddrop(e){e.preventDefault();dol();handleF(e.dataTransfer.files);}
 
 // Lance l'import d'un bilan pour une société donnée
 function importBilan(soc) {
-  alert('Sélectionne le fichier du bilan pour : ' + soc + '\n\nIl sera rangé automatiquement. Astuce : garde le nom de la société dans le fichier (ex : Bilan_BK_Avenue_2025.pdf) pour une reconnaissance fiable.');
+  const sel = document.getElementById('imp-cat');
+  if(sel) sel.value = 'Société';
+  alert('Sélectionne le fichier du bilan pour : ' + soc + '\n\nAstuce : renomme-le avec le nom de la société pour la reconnaissance automatique.');
   document.getElementById('finput').click();
 }
 
 async function handleF(files) {
-  const manuel = document.getElementById('imp-cat') ? document.getElementById('imp-cat').value : 'Autre';
+  const cat = document.getElementById('imp-cat') ? document.getElementById('imp-cat').value : 'Autre';
   for(const f of Array.from(files)) {
     impCount++;
     document.getElementById('b-imp').textContent = impCount;
     const ext = f.name.split('.').pop().toUpperCase();
-    // ── Classement automatique d'après le nom du fichier ──
-    const socKey = detectSoc(f.name);
-    const catAuto = detectCat(f.name);
-    // La catégorie retenue : auto si reconnue, sinon le choix du menu (repli)
-    const cat = catAuto || manuel;
-    const auto = !!catAuto;
-    const libelle = catLabel(cat, socKey);
-    addFileToUI(f.name, ext, libelle + (auto ? ' · auto' : ''), false);
+    addFileToUI(f.name, ext, cat, false);
+    let saved = null;
     try {
-      await sb.from('documents').insert({
-        nom: f.name, type: ext, societe: socKey || cat, statut: 'archive',
-        donnees: {taille: f.size, categorie: cat, auto: auto}
-      });
+      const {data} = await sb.from('documents').insert({
+        nom: f.name, type: ext, societe: cat, statut: 'archive',
+        donnees: {taille: f.size}
+      }).select().single();
+      saved = data;
     } catch(e) {}
-    addDocToTable(f.name, libelle);
-    // Si c'est un bilan de société, on passe sa pastille en vert "à jour"
-    if(cat==='Société' && socKey) markSoc(socKey);
+    addDocToTable(f.name, cat);
+    if(cat==='Société') updateSocBadge(f.name);
     setTimeout(() => {
       const items = document.querySelectorAll('.fitem');
       if(items.length > 0) {
         const st = items[0].querySelector('.fst');
-        if(st) {st.className='fst fst-ok';st.textContent = auto ? 'Rangé auto ✓' : 'Archivé ✓';}
+        if(st) {st.className='fst fst-ok';st.textContent='Archivé ✓';}
       }
     }, 800);
   }
@@ -2610,31 +2624,6 @@ function detectSoc(name) {
   return null;
 }
 
-// Devine la CATÉGORIE de document d'après le nom de fichier (sans lire le contenu).
-// Renvoie null si rien de reconnu → on retombe alors sur le menu déroulant.
-function detectCat(name) {
-  const n = (name||'').toLowerCase();
-  if(/bilan|liasse|2050|2065|compte.?de.?resultat|cerfa/.test(n)) return 'Société';
-  if(/taxe.?fonciere|taxe_fonciere|tf_|avis.?impot|impot.?local/.test(n)) return 'Taxe foncière';
-  if(/loyer|quittance|facturation.?loyer|facture.*loyer/.test(n)) return 'Loyer';
-  if(/bail|cautionnement|avenant/.test(n)) return 'Bail';
-  if(/syndic|appel.?de.?fonds|appel.?travaux|regul.?appel|copropriete|charges.?copro|nhood|fdi|poutres|travaux/.test(n)) return 'Syndic';
-  if(/amortissement|pret|emprunt|tableau.?amort|echeancier/.test(n)) return 'Prêt';
-  if(/acte|notaire|vente|acquisition|achat/.test(n)) return 'Acte / notaire';
-  if(/assurance|mma|allianz|axa|areas|roederer|police/.test(n)) return 'Assurance';
-  if(/releve|banque|compte.?bancaire/.test(n)) return 'Banque';
-  return null;
-}
-
-// Libellé lisible pour le retour visuel
-function catLabel(cat, socKey) {
-  const socNoms = {bka:'BK Avenue', bksj:'BK Saint-Jean', ba:'Burger Avenue', fvh:'FVH', sci:'SCI VH Immo', vh:'VH Company'};
-  const s = socKey ? socNoms[socKey] : null;
-  if(cat==='Société' && s) return 'Bilan — '+s;
-  if(s) return cat+' — '+s;
-  return cat;
-}
-
 // Passe la pastille + la carte de la société en vert "à jour"
 function markSoc(key) {
   if(!key) return;
@@ -2653,7 +2642,121 @@ function updateSocBadge(name) {
   markSoc(detectSoc(name));
 }
 
+// ── IMPORT PAR SOCIÉTÉ (Supabase Storage + table societe_docs) ──
+const IS_BUCKET = 'societes';
+const IS_SOC_LABEL = {vh:'VH Company',ba:'Burger Avenue 500',bka:'BK Avenue 526',bksj:'BK Saint-Jean 509',fvh:'FVH SARL',sci:'SCI VH Immo'};
+
+// Remplit le sélecteur d'exercices (année courante → -6)
+function isFillYears() {
+  const sel = document.getElementById('is-year');
+  if(!sel) return;
+  const now = new Date().getFullYear();
+  let html = '';
+  for(let y=now; y>=now-6; y--) html += `<option value="${y}"${y===now-1?' selected':''}>Exercice ${y}</option>`;
+  sel.innerHTML = html;
+}
+
+function isDov(e){e.preventDefault();document.getElementById('is-drop').classList.add('over');}
+function isDol(){document.getElementById('is-drop').classList.remove('over');}
+function isDrop(e){e.preventDefault();isDol();isHandle(e.dataTransfer.files);}
+
+// Upload multi-fichiers pour la société/exercice/type sélectionnés
+async function isHandle(files) {
+  const soc = document.getElementById('is-soc').value;
+  const year = document.getElementById('is-year').value;
+  const doctype = document.getElementById('is-doctype').value;
+  for(const f of Array.from(files)) {
+    const ext = f.name.split('.').pop().toLowerCase();
+    const clean = f.name.replace(/[^a-zA-Z0-9._-]/g,'_');
+    const path = `${soc}/${year}/${doctype.replace(/[^a-zA-Z0-9]/g,'_')}_${Date.now()}_${clean}`;
+    // ligne provisoire
+    const tmp = isAddRow({nom:f.name, type:ext.toUpperCase(), doctype, year, statut:'up'});
+    let url = null, ok = false;
+    try {
+      const {error: upErr} = await sb.storage.from(IS_BUCKET).upload(path, f, {upsert:true, contentType:f.type||undefined});
+      if(!upErr) {
+        const {data:pub} = sb.storage.from(IS_BUCKET).getPublicUrl(path);
+        url = pub ? pub.publicUrl : null;
+        ok = true;
+      }
+    } catch(e) {}
+    // enregistrement métadonnées
+    try {
+      await sb.from('societe_docs').insert({
+        societe: soc, exercice: parseInt(year), doctype, nom: f.name,
+        type: ext.toUpperCase(), taille: f.size, path, url, statut:'archive'
+      });
+    } catch(e) {}
+    // aussi dans documents pour rétro-compat archive globale
+    try {
+      await sb.from('documents').insert({nom:f.name, type:ext.toUpperCase(), societe:'Société',
+        statut:'archive', donnees:{taille:f.size, societe_key:soc, exercice:year, doctype, path}});
+    } catch(e) {}
+    if(tmp) {
+      const st = tmp.querySelector('.fst');
+      if(st){ st.className = ok?'fst fst-ok':'fst fst-p'; st.textContent = ok?'Stocké ✓':'Métadonnées ✓'; }
+    }
+    markSoc(soc);
+  }
+  isRenderFiles();
+}
+
+// Ajoute une ligne visuelle dans la liste
+function isAddRow(d) {
+  const list = document.getElementById('is-list');
+  if(!list) return null;
+  const row = document.createElement('div');
+  row.className = 'fitem';
+  const ext = (d.type||'').toUpperCase();
+  const dl = d.url ? `<a href="${d.url}" target="_blank" class="btn" style="font-size:11px;padding:3px 9px;">Ouvrir</a>` : '';
+  const del = d.id ? `<button class="btn" style="font-size:11px;padding:3px 9px;" onclick="isDelete('${d.id}','${(d.path||'').replace(/'/g,"")}')">Suppr.</button>` : '';
+  row.innerHTML = `<div class="fext ${ext==='CSV'?'csv':''}">${ext}</div>
+<div class="finfo"><div class="fname">${d.nom}</div><div class="fmeta">${d.doctype||''} · Exercice ${d.year||d.exercice||''}</div></div>
+<div style="display:flex;gap:6px;align-items:center;">${dl}${del}<span class="fst ${d.statut==='archive'?'fst-ok':'fst-p'}">${d.statut==='archive'?'Stocké ✓':(d.statut==='up'?'…':'')}</span></div>`;
+  list.prepend(row);
+  return row;
+}
+
+// Affiche les fichiers déjà importés pour la société sélectionnée
+async function isRenderFiles() {
+  const list = document.getElementById('is-list');
+  if(!list) return;
+  const soc = document.getElementById('is-soc').value;
+  document.getElementById('is-drop-title').textContent = 'Glisse les fichiers de ' + (IS_SOC_LABEL[soc]||'la société') + ' ici';
+  list.innerHTML = '<div style="color:var(--text3);font-size:12px;padding:6px 0;">Chargement…</div>';
+  let docs = [];
+  try {
+    const {data} = await sb.from('societe_docs').select('*').eq('societe', soc).order('exercice',{ascending:false}).order('created_at',{ascending:false});
+    docs = data || [];
+  } catch(e) {}
+  if(!docs.length) {
+    list.innerHTML = '<div style="color:var(--text3);font-size:12px;padding:6px 0;text-align:center;">Aucun fichier pour ' + (IS_SOC_LABEL[soc]||'cette société') + ' — dépose les bilans des derniers exercices ci-dessus.</div>';
+    return;
+  }
+  list.innerHTML = '';
+  // regroupe par exercice
+  const byYear = {};
+  docs.forEach(d => { (byYear[d.exercice] = byYear[d.exercice]||[]).push(d); });
+  Object.keys(byYear).sort((a,b)=>b-a).forEach(y => {
+    const h = document.createElement('div');
+    h.style.cssText = 'font-size:11px;font-weight:600;color:var(--text2);margin:10px 0 4px;letter-spacing:.5px;';
+    h.textContent = 'EXERCICE ' + y + ' · ' + byYear[y].length + ' fichier' + (byYear[y].length>1?'s':'');
+    list.appendChild(h);
+    byYear[y].forEach(d => isAddRow({...d, year:d.exercice}));
+  });
+}
+
+// Supprime un fichier (storage + métadonnées)
+async function isDelete(id, path) {
+  if(!confirm('Supprimer ce fichier ?')) return;
+  try { if(path) await sb.storage.from(IS_BUCKET).remove([path]); } catch(e) {}
+  try { await sb.from('societe_docs').delete().eq('id', id); } catch(e) {}
+  isRenderFiles();
+}
+
 // ── START ──
+isFillYears();
+isRenderFiles();
 init();
 </script>
 </body>
