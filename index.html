@@ -227,7 +227,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:14
 <div id="tab-dashboard" class="panel active">
   <div style="display:flex;justify-content:flex-end;margin-bottom:10px;">
     <span id="maj-badge" style="display:inline-flex;align-items:center;gap:6px;background:var(--success-l);color:var(--success);font-size:11px;font-weight:600;font-family:var(--mono);padding:4px 11px;border-radius:20px;border:1px solid rgba(22,101,52,0.2);">
-      <span style="font-size:9px;">●</span> Mis à jour le vendredi 12 juin 2026 à 00h51
+      <span style="font-size:9px;">●</span> Mis à jour le vendredi 12 juin 2026 à 01h14
     </span>
   </div>
   <!-- Optimisation panel toujours visible -->
@@ -426,43 +426,21 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:14
 
 <!-- VH COMPANY -->
 <div id="tab-soc-vh" class="panel">
-  <div class="alert a-g"><span>✓</span><div><strong>VH Company SARL</strong> — Bilan 30/06/2025 analysé. SIRET 80203462900021 · APE 6420Z · Capital 305 000€ · Vincent Hilaire 100%</div></div>
-  <div class="g4">
-    <div class="kpi acc"><div class="kl">Résultat net</div><div class="kv">674 285€</div><div class="ks">vs 697 326€ N-1</div></div>
-    <div class="kpi"><div class="kl">Résultat fiscal</div><div class="kv">9 056€</div><div class="ks">Après déficits antérieurs</div></div>
-    <div class="kpi"><div class="kl">Capitaux propres</div><div class="kv">1 507 111€</div><div class="ks">+474 285€ vs N-1</div></div>
-    <div class="kpi war"><div class="kl">CC associé Vincent</div><div class="kv">304 987€</div><div class="ks">+140 000€ cet exercice</div></div>
-  </div>
-  <div class="g2">
-    <div class="card">
-      <div class="card-title">Compte de résultat</div>
-      <div class="row"><span class="rl">Charges exploitation</span><span class="rv r">−35 900€</span></div>
-      <div class="row"><span class="rl">Résultat exploitation</span><span class="rv r">−39 585€</span></div>
-      <div class="row"><span class="rl">Dividendes filiales (mère-fille)</span><span class="rv g">+700 241€</span></div>
-      <div class="row"><span class="rl">Autres produits financiers</span><span class="rv g">+20 058€</span></div>
-      <div class="row"><span class="rl">Intérêts CC (charges fin.)</span><span class="rv r">−6 429€</span></div>
-      <div class="row"><span class="rl"><strong>Résultat net</strong></span><span class="rv"><strong>674 285€</strong></span></div>
-    </div>
-    <div class="card">
-      <div class="card-title">Filiales — dividendes reçus</div>
-      <div class="row"><span class="rl">BK Avenue SARL (100%)</span><span class="rv g">+435 901€</span></div>
-      <div class="row"><span class="rl">BK Saint-Jean SARL (100%)</span><span class="rv g">+236 553€</span></div>
-      <div class="row"><span class="rl">Burger Avenue SARL (100%)</span><span class="rv g">+27 787€</span></div>
-      <div class="row"><span class="rl">FVH SARL (100%)</span><span class="rv r">−2 104€ (déficitaire)</span></div>
-      <div class="row"><span class="rl">SCI VH Immo (10%)</span><span class="rv">0€</span></div>
-      <div class="row"><span class="rl" style="font-weight:600">Total</span><span class="rv g"><strong>700 137€</strong></span></div>
-    </div>
+  <div class="alert a-b"><span>▣</span><div><strong>VH Company</strong> — SARL Holding · APE 6420Z · détenue à 100% par Vincent Hilaire. Société mère du groupe (détient BK Avenue, BK Saint-Jean, Burger Avenue, FVH à 100%, SCI VH Immo à 10%).</div></div>
+  <div class="card">
+    <div class="card-title">Suivi par exercice</div>
+    <div style="color:var(--text3);font-size:13px;text-align:center;padding:18px;">En attente des bilans. Dépose-les ci-dessous et envoie-les-moi dans le chat : je remplis le suivi exercice par exercice à partir de 2023.</div>
   </div>
   <div class="card">
     <div class="card-title">📒 Cahier de bord — dividendes décidés vs virements réellement faits</div>
-    <div class="alert a-w" style="margin-bottom:12px;"><span>⚠</span><div><strong>Dividende décidé ≠ argent reçu.</strong> Trace ici chaque virement réel (date, montant, n° / banque). Tant que le total des virements n'atteint pas le dividende décidé, le reste est dû par la filiale à la holding (compte courant). Cliquez sur une filiale pour voir et ajouter ses virements.</div></div>
+    <div class="alert a-w" style="margin-bottom:12px;"><span>⚠</span><div><strong>Dividende décidé ≠ argent reçu.</strong> Trace ici chaque virement réel (date, montant, n° / banque). Les montants des dividendes et le sens des comptes courants se rempliront à partir des bilans, exercice par exercice.</div></div>
     <table class="tbl">
       <thead><tr><th>Filiale</th><th class="r">Dividende décidé</th><th class="r">Viré (réel)</th><th class="r">Reste dû</th><th class="r"></th></tr></thead>
       <tbody id="vir-tbody">
-        <tr data-fil="bka" data-soc="BK Avenue" data-div="435901"><td><strong>BK Avenue</strong> SARL</td><td class="r g">435 901€</td><td class="r" id="vsum-bka">—</td><td class="r" id="vrest-bka">—</td><td class="r"><button class="btn" style="font-size:11px;padding:4px 10px;" onclick="virOpen('bka')">📒 Suivi</button></td></tr>
-        <tr data-fil="bksj" data-soc="BK Saint-Jean" data-div="236553"><td><strong>BK Saint-Jean</strong> SARL</td><td class="r g">236 553€</td><td class="r" id="vsum-bksj">—</td><td class="r" id="vrest-bksj">—</td><td class="r"><button class="btn" style="font-size:11px;padding:4px 10px;" onclick="virOpen('bksj')">📒 Suivi</button></td></tr>
-        <tr data-fil="ba" data-soc="Burger Avenue" data-div="27787"><td><strong>Burger Avenue</strong> SARL</td><td class="r g">27 787€</td><td class="r" id="vsum-ba">—</td><td class="r" id="vrest-ba">—</td><td class="r"><button class="btn" style="font-size:11px;padding:4px 10px;" onclick="virOpen('ba')">📒 Suivi</button></td></tr>
-        <tr data-fil="fvh" data-soc="FVH" data-div="0"><td><strong>FVH</strong> SARL</td><td class="r r">déficit</td><td class="r" id="vsum-fvh">—</td><td class="r">—</td><td class="r"><button class="btn" style="font-size:11px;padding:4px 10px;" onclick="virOpen('fvh')">📒 Suivi</button></td></tr>
+        <tr data-fil="bka"><td><strong>BK Avenue</strong> SARL</td><td class="r" id="vdiv-bka">—</td><td class="r" id="vsum-bka">—</td><td class="r" id="vrest-bka">—</td><td class="r"><button class="btn" style="font-size:11px;padding:4px 10px;" onclick="virOpen('bka')">📒 Suivi</button></td></tr>
+        <tr data-fil="bksj"><td><strong>BK Saint-Jean</strong> SARL</td><td class="r" id="vdiv-bksj">—</td><td class="r" id="vsum-bksj">—</td><td class="r" id="vrest-bksj">—</td><td class="r"><button class="btn" style="font-size:11px;padding:4px 10px;" onclick="virOpen('bksj')">📒 Suivi</button></td></tr>
+        <tr data-fil="ba"><td><strong>Burger Avenue</strong> SARL</td><td class="r" id="vdiv-ba">—</td><td class="r" id="vsum-ba">—</td><td class="r" id="vrest-ba">—</td><td class="r"><button class="btn" style="font-size:11px;padding:4px 10px;" onclick="virOpen('ba')">📒 Suivi</button></td></tr>
+        <tr data-fil="fvh"><td><strong>FVH</strong> SARL</td><td class="r" id="vdiv-fvh">—</td><td class="r" id="vsum-fvh">—</td><td class="r">—</td><td class="r"><button class="btn" style="font-size:11px;padding:4px 10px;" onclick="virOpen('fvh')">📒 Suivi</button></td></tr>
       </tbody>
     </table>
     <div class="card" style="margin-top:14px;background:var(--surface2);">
@@ -470,10 +448,11 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:14
       <table class="tbl">
         <thead><tr><th>Filiale</th><th>Sens</th><th class="r">Montant</th></tr></thead>
         <tbody>
-          <tr><td><strong>FVH</strong> SARL</td><td><span class="tag tag-w">Mère → Fille (la holding a avancé)</span></td><td class="r">101 000€</td></tr>
-          <tr><td><strong>SCI VH Immo</strong></td><td><span class="tag tag-g">Fille → Mère (créance VH)</span></td><td class="r">1 379 169€</td></tr>
-          <tr><td>BK Avenue / BK SJ / Burger Av.</td><td><span class="tag tag-gr">à compléter avec les bilans</span></td><td class="r">—</td></tr>
-          <tr style="border-top:2px solid var(--border2);"><td style="font-weight:600">CC inter-sociétés actif VH</td><td></td><td class="r"><strong>≈ 2 025 773€</strong></td></tr>
+          <tr><td><strong>BK Avenue</strong></td><td><span class="tag tag-gr">à compléter au bilan</span></td><td class="r">—</td></tr>
+          <tr><td><strong>BK Saint-Jean</strong></td><td><span class="tag tag-gr">à compléter au bilan</span></td><td class="r">—</td></tr>
+          <tr><td><strong>Burger Avenue</strong></td><td><span class="tag tag-gr">à compléter au bilan</span></td><td class="r">—</td></tr>
+          <tr><td><strong>FVH</strong></td><td><span class="tag tag-gr">à compléter au bilan</span></td><td class="r">—</td></tr>
+          <tr><td><strong>SCI VH Immo</strong></td><td><span class="tag tag-gr">à compléter au bilan</span></td><td class="r">—</td></tr>
         </tbody>
       </table>
     </div>
@@ -504,19 +483,35 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:14
 
 <!-- AUTRES SOCIETES -->
 <div id="tab-soc-ba" class="panel">
-  <div class="alert a-w"><span>📄</span><div><strong>Burger Avenue SARL</strong> — Bilan non importé. CA estimé 4,4M€ · Résultat 27 787€ (données bilan VH).</div></div>
+  <div class="alert a-b"><span>▣</span><div><strong>Burger Avenue SARL</strong> — SARL · Restauration · Montpellier (BK 500). Détenue à 100% par VH Company.</div></div>
+  <div class="card">
+    <div class="card-title">Suivi par exercice</div>
+    <div style="color:var(--text3);font-size:13px;text-align:center;padding:18px;">En attente des bilans. Dépose-les ci-dessous et envoie-les-moi dans le chat : je remplis le suivi exercice par exercice à partir de 2023 (CA, résultat, capitaux propres, compte courant avec la holding, dividende remonté).</div>
+  </div>
   <div class="socimp" data-soc="ba"></div>
 </div>
 <div id="tab-soc-bka" class="panel">
-  <div class="alert a-w"><span>📄</span><div><strong>BK Avenue SARL</strong> — Bilan non importé. CA estimé 6,4M€ · Résultat 435 901€ · TVA : FR30830144242.</div></div>
+  <div class="alert a-b"><span>▣</span><div><strong>BK Avenue SARL</strong> — SARL · Restauration · St-Clément-de-Rivière (BK 526). Détenue à 100% par VH Company. TVA : FR30830144242.</div></div>
+  <div class="card">
+    <div class="card-title">Suivi par exercice</div>
+    <div style="color:var(--text3);font-size:13px;text-align:center;padding:18px;">En attente des bilans. Dépose-les ci-dessous et envoie-les-moi dans le chat : je remplis le suivi exercice par exercice à partir de 2023 (CA, résultat, capitaux propres, compte courant avec la holding, dividende remonté).</div>
+  </div>
   <div class="socimp" data-soc="bka"></div>
 </div>
 <div id="tab-soc-bksj" class="panel">
-  <div class="alert a-w"><span>📄</span><div><strong>BK Saint-Jean SARL</strong> — Bilan non importé. CA estimé 5,1M€ · Résultat 236 553€.</div></div>
+  <div class="alert a-b"><span>▣</span><div><strong>BK Saint-Jean SARL</strong> — SARL · Restauration · St-Jean-de-Védas (BK 509). Détenue à 100% par VH Company.</div></div>
+  <div class="card">
+    <div class="card-title">Suivi par exercice</div>
+    <div style="color:var(--text3);font-size:13px;text-align:center;padding:18px;">En attente des bilans. Dépose-les ci-dessous et envoie-les-moi dans le chat : je remplis le suivi exercice par exercice à partir de 2023 (CA, résultat, capitaux propres, compte courant avec la holding, dividende remonté).</div>
+  </div>
   <div class="socimp" data-soc="bksj"></div>
 </div>
 <div id="tab-soc-fvh" class="panel">
-  <div class="alert a-r"><span>⚠</span><div><strong>FVH SARL</strong> — Déficitaire (−2 104€). Pas de dividendes. CC débiteur dans VH : 101 000€.</div></div>
+  <div class="alert a-b"><span>▣</span><div><strong>FVH SARL</strong> — SARL détenue à 100% par VH Company.</div></div>
+  <div class="card">
+    <div class="card-title">Suivi par exercice</div>
+    <div style="color:var(--text3);font-size:13px;text-align:center;padding:18px;">En attente des bilans. Dépose-les ci-dessous et envoie-les-moi dans le chat : je remplis le suivi exercice par exercice à partir de 2023 (résultat, capitaux propres, compte courant avec la holding).</div>
+  </div>
   <div class="socimp" data-soc="fvh"></div>
 </div>
 <div id="tab-soc-sci" class="panel">
@@ -1054,107 +1049,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:14
 
 <!-- IMPORT -->
 <div id="tab-import" class="panel">
-  <div class="alert a-b"><span>💡</span><div><strong>Point d'entrée unique.</strong> Choisis la catégorie, dépose ton fichier : il est archivé ici, classé au bon endroit. <strong>Pour que Claude lise et analyse un document, envoie-le aussi dans le chat</strong> — l'appli archive, le chat analyse.</div></div>
-
-  <div class="card">
-    <div class="card-title">Catégorie du document</div>
-    <div class="sim-row" style="flex-direction:column;align-items:stretch;gap:4px;">
-      <select id="imp-cat" class="sim-in" style="width:100%;font-family:var(--font);">
-        <option value="Impôts">Impôts — avis, déclaration, IFU, liasse</option>
-        <option value="Assurance habitation">Assurance — habitation</option>
-        <option value="Assurance auto">Assurance — auto</option>
-        <option value="Assurance moto">Assurance — moto</option>
-        <option value="Assurance pro">Assurance — entreprise / pro</option>
-        <option value="Retraite">Retraite — Madelin, PER</option>
-        <option value="Prévoyance">Prévoyance</option>
-        <option value="Santé">Santé — mutuelle</option>
-        <option value="Société">Société — bilan, liasse</option>
-        <option value="Banque">Banque — relevé, RIB</option>
-        <option value="Autre">Autre</option>
-      </select>
-    </div>
-  </div>
-
-  <!-- ═══ IMPORT PAR SOCIÉTÉ (multi-fichiers, multi-exercices) ═══ -->
-  <div class="card" id="impsoc-card">
-    <div class="card-title">🏢 Import par société — bilans & liasses sur plusieurs exercices</div>
-    <div class="alert a-b" style="margin-bottom:12px;"><span>💡</span><div>Sélectionne une société, choisis l'exercice, puis dépose <strong>autant de fichiers que tu veux</strong> (bilan, liasse 2065, FEC, grand livre…). Les fichiers sont rangés dans <strong>Dropbox « Fiscal Vincent »</strong> en <code>/Société/Exercice/</code>, renommés clairement avec la date. On traite ensuite chaque société une par une.</div></div></div>
-
-    <div class="g3" style="margin-bottom:12px;">
-      <div class="sim-row" style="flex-direction:column;align-items:stretch;gap:4px;">
-        <label style="width:auto;">Société</label>
-        <select id="is-soc" class="sim-in" style="width:100%;font-family:var(--font);" onchange="isRenderFiles()">
-          <option value="vh">VH Company (holding)</option>
-          <option value="ba">Burger Avenue 500</option>
-          <option value="bka">BK Avenue (526)</option>
-          <option value="bksj">BK Saint-Jean (509)</option>
-          <option value="fvh">FVH SARL</option>
-          <option value="sci">SCI VH Immo</option>
-        </select>
-      </div>
-      <div class="sim-row" style="flex-direction:column;align-items:stretch;gap:4px;">
-        <label style="width:auto;">Exercice</label>
-        <select id="is-year" class="sim-in" style="width:100%;font-family:var(--font);"></select>
-      </div>
-      <div class="sim-row" style="flex-direction:column;align-items:stretch;gap:4px;">
-        <label style="width:auto;">Type de document</label>
-        <select id="is-doctype" class="sim-in" style="width:100%;font-family:var(--font);">
-          <option value="Bilan">Bilan (actif/passif)</option>
-          <option value="Compte de résultat">Compte de résultat</option>
-          <option value="Liasse fiscale">Liasse fiscale (2065/2033…)</option>
-          <option value="FEC">FEC</option>
-          <option value="Grand livre">Grand livre</option>
-          <option value="Balance">Balance</option>
-          <option value="Annexe">Annexe / autres</option>
-        </select>
-      </div>
-    </div>
-
-    <div class="drop" id="is-drop" onclick="document.getElementById('is-finput').click()" ondragover="isDov(event)" ondragleave="isDol()" ondrop="isDrop(event)" style="padding:22px;">
-      <div style="font-size:28px;margin-bottom:6px;">🏢📎</div>
-      <h3 id="is-drop-title">Glisse les fichiers de la société ici</h3>
-      <p style="font-size:12px;">PDF · XLSX · CSV · JPG — plusieurs fichiers acceptés</p>
-      <input type="file" id="is-finput" multiple accept=".pdf,.csv,.xlsx,.xls,.jpg,.jpeg,.png" style="display:none;" onchange="isHandle(this.files)">
-    </div>
-
-    <div id="is-list" style="margin-top:12px;"></div>
-  </div>
-
-  <div class="drop" id="drop-z" onclick="document.getElementById('finput').click()" ondragover="dov(event)" ondragleave="dol()" ondrop="ddrop(event)">
-    <div style="font-size:32px;margin-bottom:8px;">📎</div>
-    <h3>Glisse ton fichier ici</h3>
-    <p>PDF · CSV · XLSX · JPG — tout document administratif</p>
-    <p style="font-size:11px;color:var(--text3);margin-top:6px;">Le fichier est rangé dans la catégorie choisie ci-dessus.</p>
-    <input type="file" id="finput" multiple accept=".pdf,.csv,.xlsx,.xls,.jpg,.jpeg,.png" style="display:none;" onchange="handleF(this.files)">
-  </div>
-
-  <div id="flist"></div>
-
-  <div class="card">
-    <div class="card-title">📁 Bilans par société — dossier à jour</div>
-    <table class="tbl">
-      <thead><tr><th>Société</th><th>Dernier exercice connu</th><th class="r">Bilan</th><th class="r"></th></tr></thead>
-      <tbody>
-        <tr><td><strong>VH Company</strong> (holding)</td><td>30/06/2025</td><td class="r"><span class="tag tag-g" id="bilan-vh">✓ Importé</span></td><td class="r"><button class="btn" style="font-size:11px;padding:4px 10px;" onclick="importBilan('VH Company')">Réimporter</button></td></tr>
-        <tr><td><strong>Burger Avenue</strong> SARL</td><td>Bilan VH (résultat 27 787€)</td><td class="r"><span class="tag tag-gr" id="bilan-ba">À importer</span></td><td class="r"><button class="btn" style="font-size:11px;padding:4px 10px;" onclick="importBilan('Burger Avenue')">Importer</button></td></tr>
-        <tr><td><strong>BK Avenue</strong> SARL</td><td>Bilan VH (résultat 435 901€)</td><td class="r"><span class="tag tag-gr" id="bilan-bka">À importer</span></td><td class="r"><button class="btn" style="font-size:11px;padding:4px 10px;" onclick="importBilan('BK Avenue')">Importer</button></td></tr>
-        <tr><td><strong>BK Saint-Jean</strong> SARL</td><td>Bilan VH (résultat 236 553€)</td><td class="r"><span class="tag tag-gr" id="bilan-bksj">À importer</span></td><td class="r"><button class="btn" style="font-size:11px;padding:4px 10px;" onclick="importBilan('BK Saint-Jean')">Importer</button></td></tr>
-        <tr><td><strong>FVH</strong> SARL</td><td>Déficitaire (−2 104€)</td><td class="r"><span class="tag tag-gr" id="bilan-fvh">À importer</span></td><td class="r"><button class="btn" style="font-size:11px;padding:4px 10px;" onclick="importBilan('FVH')">Importer</button></td></tr>
-        <tr><td><strong>SCI VH Immo</strong></td><td>CC VH 1,38M€</td><td class="r"><span class="tag tag-gr" id="bilan-sci">À importer</span></td><td class="r"><button class="btn" style="font-size:11px;padding:4px 10px;" onclick="importBilan('SCI VH Immo')">Importer</button></td></tr>
-      </tbody>
-    </table>
-    <div class="alert a-b" style="margin-top:10px;"><span>💡</span><div>Nomme tes fichiers avec le nom de la société (ex : <strong>BK_Avenue_2025.pdf</strong>) pour qu'ils soient reconnus automatiquement. Le bilan passe alors en vert « à jour ». Pense aussi à me l'envoyer dans le chat pour que j'en extraie les chiffres.</div></div>
-  </div>
-
-  <div class="card">
-    <div class="card-title">Mes documents archivés</div>
-    <table class="tbl">
-      <thead><tr><th>Document</th><th>Catégorie</th><th class="r">Date</th></tr></thead>
-      <tbody id="import-tbl">
-        <tr><td colspan="3" style="color:var(--text3);text-align:center;padding:14px;">Aucun document encore — dépose ton premier fichier ci-dessus.</td></tr>
-      </tbody>
-    </table>
-  </div>
+  <div class="alert a-b"><span>💡</span><div><strong>L'import se fait maintenant dans chaque société.</strong> Va dans la société concernée (VH Company, Burger Avenue, BK Avenue, BK Saint-Jean, FVH, SCI VH Immo) et dépose les bilans dans le bloc en bas de sa page. Ils sont rangés automatiquement dans Dropbox « Fiscal Vincent » en <code>/Société/Exercice/</code>, renommés avec la date. Pense à m'envoyer aussi le bilan dans le chat pour que je l'analyse.</div></div>
 </div>
 
 </div></div></div>
@@ -2500,12 +2395,9 @@ async function loadSciFin() {
     const {data} = await sb.from('coches').select('*').eq('cle','sci_financier').maybeSingle();
     if(data && data.valeur && typeof data.valeur==='object') sciFin = data.valeur;
   } catch(e) {}
-  // Amorçage : si aucun exercice, on crée l'exercice courant avec les valeurs connues
+  // Amorçage : si aucun exercice, on crée un exercice 2023 VIDE (à remplir depuis le bilan)
   if(!sciFin.exercices || !Object.keys(sciFin.exercices).length) {
-    const an = String(new Date().getFullYear()-1); // dernier exercice clos
-    sciFin = { exercices: { [an]: Object.assign(sciBlankExercice(), {
-      capital:1000, cc:[{nom:'VH', montant:1379169}]
-    }) }, courant: an };
+    sciFin = { exercices: { '2023': sciBlankExercice() }, courant: '2023' };
   }
   if(!sciFin.courant) sciFin.courant = Object.keys(sciFin.exercices).sort().pop();
   fillSciSelect();
@@ -2667,6 +2559,7 @@ async function handleF(files) {
 
 function addFileToUI(name, type, cat, already) {
   const list = document.getElementById('flist');
+  if(!list) return;
   const d = document.createElement('div');
   d.className = 'fitem';
   const ext = (type||'').toUpperCase();
@@ -2878,7 +2771,7 @@ async function isDelete(id, dropbox_path) {
 function socImpYears() {
   const now = new Date().getFullYear();
   let o = '';
-  for(let y=now; y>=now-6; y--) o += `<option value="${y}"${y===now-1?' selected':''}>Exercice ${y}</option>`;
+  for(let y=now; y>=2023; y--) o += `<option value="${y}"${y===now-1?' selected':''}>Exercice ${y}</option>`;
   return o;
 }
 
@@ -2888,7 +2781,8 @@ function buildSocImports() {
     box.innerHTML = `
       <div class="card" style="margin-top:14px;">
         <div class="card-title">📥 Importer les bilans — ${IS_SOC_LABEL[soc]||''}</div>
-        <div class="alert a-b" style="margin-bottom:12px;"><span>💡</span><div>Dépose ici les bilans, liasses, FEC… de <strong>${IS_SOC_LABEL[soc]||'cette société'}</strong> sur plusieurs exercices. Rangés dans Dropbox « Fiscal Vincent » en <code>/${IS_SOC_FOLDER[soc]||soc}/Exercice/</code>, renommés avec la date. Envoie-les aussi dans le chat pour que je les analyse.</div></div>
+        <div class="si-frise" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;"></div>
+        <div class="alert a-b" style="margin-bottom:12px;"><span>💡</span><div>Dépose ici les documents de <strong>${IS_SOC_LABEL[soc]||'cette société'}</strong> par exercice : <strong>bilan</strong> et <strong>PV d'Assemblée Générale</strong> (+ liasse, FEC…). La frise ci-dessus passe en vert quand le bilan ET le PV d'AG sont reçus pour une année. Rangés dans Dropbox « Fiscal Vincent » en <code>/${IS_SOC_FOLDER[soc]||soc}/Exercice/</code>. Envoie-les aussi dans le chat pour que je les analyse.</div></div>
         <div class="g2" style="margin-bottom:12px;">
           <div class="sim-row" style="flex-direction:column;align-items:stretch;gap:4px;">
             <label style="width:auto;">Exercice</label>
@@ -2900,6 +2794,7 @@ function buildSocImports() {
               <option value="Bilan">Bilan (actif/passif)</option>
               <option value="Compte de résultat">Compte de résultat</option>
               <option value="Liasse fiscale">Liasse fiscale (2065/2033…)</option>
+              <option value="PV Assemblée Générale">PV d'Assemblée Générale (validation + dividende)</option>
               <option value="FEC">FEC</option>
               <option value="Grand livre">Grand livre</option>
               <option value="Balance">Balance</option>
@@ -2979,13 +2874,33 @@ function socImpRow(list, d) {
 async function socImpRender(box) {
   const soc = box.dataset.soc;
   const list = box.querySelector('.si-list');
+  const frise = box.querySelector('.si-frise');
   if(!list) return;
   list.innerHTML = '<div style="color:var(--text3);font-size:12px;padding:6px 0;">Chargement…</div>';
   let docs = [];
   try { const {data}=await sb.from('societe_docs').select('*').eq('societe',soc).order('exercice',{ascending:false}).order('created_at',{ascending:false}); docs=data||[]; } catch(e){}
+  const byYear={}; docs.forEach(d=>{(byYear[d.exercice]=byYear[d.exercice]||[]).push(d);});
+  // Frise des exercices 2023 → année courante : statut bilan + PV d'AG par année
+  if(frise) {
+    const now = new Date().getFullYear();
+    let html = '';
+    for(let y=now; y>=2023; y--) {
+      const items = byYear[y] || [];
+      const hasBilan = items.some(d => /bilan|compte de r|liasse|fec|grand livre|balance/i.test(d.doctype||''));
+      const hasAG = items.some(d => /assembl|pv|a\.?g\.?/i.test(d.doctype||''));
+      const chip = (ok,label) => ok
+        ? `<span style="display:inline-flex;align-items:center;gap:3px;background:var(--success-l);color:var(--success);border-radius:10px;padding:1px 7px;font-size:10px;font-weight:600;">✓ ${label}</span>`
+        : `<span style="display:inline-flex;align-items:center;gap:3px;background:var(--surface);color:var(--text3);border:1px solid var(--border);border-radius:10px;padding:1px 7px;font-size:10px;">○ ${label}</span>`;
+      const allGreen = hasBilan && hasAG;
+      html += `<div style="display:flex;flex-direction:column;gap:4px;background:${allGreen?'var(--success-l)':'var(--surface2)'};border:1px solid ${allGreen?'rgba(22,101,52,0.25)':'var(--border)'};border-radius:12px;padding:8px 10px;min-width:118px;">
+        <div style="font-size:12px;font-weight:600;color:${allGreen?'var(--success)':'var(--text2)'};">Exercice ${y}</div>
+        <div style="display:flex;gap:4px;flex-wrap:wrap;">${chip(hasBilan,'Bilan')}${chip(hasAG,'PV AG')}</div>
+      </div>`;
+    }
+    frise.innerHTML = html;
+  }
   if(!docs.length){ list.innerHTML='<div style="color:var(--text3);font-size:12px;padding:6px 0;text-align:center;">Aucun fichier encore — dépose les bilans des derniers exercices ci-dessus.</div>'; return; }
   list.innerHTML='';
-  const byYear={}; docs.forEach(d=>{(byYear[d.exercice]=byYear[d.exercice]||[]).push(d);});
   Object.keys(byYear).sort((a,b)=>b-a).forEach(y=>{
     const h=document.createElement('div');
     h.style.cssText='font-size:11px;font-weight:600;color:var(--text2);margin:10px 0 4px;letter-spacing:.5px;';
@@ -3096,8 +3011,6 @@ async function virRefreshAll() {
 // ── START ──
 virRefreshAll();
 buildSocImports();
-isFillYears();
-isRenderFiles();
 init();
 </script>
 </body>
