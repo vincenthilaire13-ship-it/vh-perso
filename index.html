@@ -225,6 +225,11 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:14
 
 <!-- DASHBOARD -->
 <div id="tab-dashboard" class="panel active">
+  <div style="display:flex;justify-content:flex-end;margin-bottom:10px;">
+    <span id="maj-badge" style="display:inline-flex;align-items:center;gap:6px;background:var(--success-l);color:var(--success);font-size:11px;font-weight:600;font-family:var(--mono);padding:4px 11px;border-radius:20px;border:1px solid rgba(22,101,52,0.2);">
+      <span style="font-size:9px;">●</span> Mis à jour le vendredi 12 juin 2026 à 00h34
+    </span>
+  </div>
   <!-- Optimisation panel toujours visible -->
   <div class="opt-wrap">
     <div class="opt-hdr" onclick="togOpt()">
@@ -448,23 +453,29 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:14
       <div class="row"><span class="rl" style="font-weight:600">Total</span><span class="rv g"><strong>700 137€</strong></span></div>
     </div>
   </div>
+  <div class="socimp" data-soc="vh"></div>
 </div>
 
 <!-- AUTRES SOCIETES -->
 <div id="tab-soc-ba" class="panel">
-  <div class="alert a-w"><span>📄</span><div><strong>Burger Avenue SARL</strong> — Bilan non importé. CA estimé 4,4M€ · Résultat 27 787€ (données bilan VH). <button class="btn btn-p" style="margin-left:10px;" onclick="sw('import',null)">Importer →</button></div></div>
+  <div class="alert a-w"><span>📄</span><div><strong>Burger Avenue SARL</strong> — Bilan non importé. CA estimé 4,4M€ · Résultat 27 787€ (données bilan VH).</div></div>
+  <div class="socimp" data-soc="ba"></div>
 </div>
 <div id="tab-soc-bka" class="panel">
-  <div class="alert a-w"><span>📄</span><div><strong>BK Avenue SARL</strong> — Bilan non importé. CA estimé 6,4M€ · Résultat 435 901€ · TVA : FR30830144242. <button class="btn btn-p" style="margin-left:10px;" onclick="sw('import',null)">Importer →</button></div></div>
+  <div class="alert a-w"><span>📄</span><div><strong>BK Avenue SARL</strong> — Bilan non importé. CA estimé 6,4M€ · Résultat 435 901€ · TVA : FR30830144242.</div></div>
+  <div class="socimp" data-soc="bka"></div>
 </div>
 <div id="tab-soc-bksj" class="panel">
-  <div class="alert a-w"><span>📄</span><div><strong>BK Saint-Jean SARL</strong> — Bilan non importé. CA estimé 5,1M€ · Résultat 236 553€. <button class="btn btn-p" style="margin-left:10px;" onclick="sw('import',null)">Importer →</button></div></div>
+  <div class="alert a-w"><span>📄</span><div><strong>BK Saint-Jean SARL</strong> — Bilan non importé. CA estimé 5,1M€ · Résultat 236 553€.</div></div>
+  <div class="socimp" data-soc="bksj"></div>
 </div>
 <div id="tab-soc-fvh" class="panel">
-  <div class="alert a-r"><span>⚠</span><div><strong>FVH SARL</strong> — Déficitaire (−2 104€). Pas de dividendes. CC débiteur dans VH : 101 000€. <button class="btn btn-p" style="margin-left:10px;" onclick="sw('import',null)">Importer →</button></div></div>
+  <div class="alert a-r"><span>⚠</span><div><strong>FVH SARL</strong> — Déficitaire (−2 104€). Pas de dividendes. CC débiteur dans VH : 101 000€.</div></div>
+  <div class="socimp" data-soc="fvh"></div>
 </div>
 <div id="tab-soc-sci" class="panel">
   <div class="alert a-b"><span>🏢</span><div><strong>SCI VH Immo</strong> — VH détient 10%. Cette section regroupe le <strong>financier de la société</strong> : capital, comptes courants, résultat et bilan. Les bâtiments (notaire, banque, syndic, bail, loyers, taxe foncière) se gèrent dans la section <strong>Bâtiments</strong>.</div></div>
+  <div class="socimp" data-soc="sci"></div>
 
   <div class="g4">
     <div class="kpi acc"><div class="kl">Capital social</div><div class="kv" id="sci-k-capital">—</div><div class="ks">SCI VH Immo</div></div>
@@ -1021,7 +1032,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:14
   <!-- ═══ IMPORT PAR SOCIÉTÉ (multi-fichiers, multi-exercices) ═══ -->
   <div class="card" id="impsoc-card">
     <div class="card-title">🏢 Import par société — bilans & liasses sur plusieurs exercices</div>
-    <div class="alert a-b" style="margin-bottom:12px;"><span>💡</span><div>Sélectionne une société, choisis l'exercice, puis dépose <strong>autant de fichiers que tu veux</strong> (bilan, liasse 2065, FEC, grand livre…). Les fichiers sont stockés et rangés par société et par année, prêts pour l'analyse complète. On traite ensuite chaque société une par une.</div></div>
+    <div class="alert a-b" style="margin-bottom:12px;"><span>💡</span><div>Sélectionne une société, choisis l'exercice, puis dépose <strong>autant de fichiers que tu veux</strong> (bilan, liasse 2065, FEC, grand livre…). Les fichiers sont rangés dans <strong>Dropbox « Fiscal Vincent »</strong> en <code>/Société/Exercice/</code>, renommés clairement avec la date. On traite ensuite chaque société une par une.</div></div></div>
 
     <div class="g3" style="margin-bottom:12px;">
       <div class="sim-row" style="flex-direction:column;align-items:stretch;gap:4px;">
@@ -1621,18 +1632,35 @@ const DOC_BUCKET = 'documents';
 const DOC_CATS = ['Acte / notaire','Prêt bancaire','Bail','Taxe foncière','Syndic','Facture loyer','Assurance','Autre'];
 
 // ╔══════════════════════════════════════════════════════════════════════╗
-// ║  TOKEN DROPBOX — À REMPLACER ICI quand il expire.                      ║
-// ║  Génère-le sur dropbox.com/developers/apps → ton app → Settings →      ║
-// ║  "Generated access token" → Generate, puis colle-le ci-dessous.       ║
-// ║  ⚠ Ce token est visible dans le code source de la page.               ║
-// ║  Laisse '' (vide) pour désactiver l'upload Dropbox et n'utiliser       ║
-// ║  que Supabase + le bouton Télécharger.                                 ║
+// ║  DROPBOX « Fiscal Vincent » — système refresh token (ne périme jamais)║
+// ║  App folder dédiée. Le code régénère l'access token tout seul via le   ║
+// ║  refresh token (comme BK Tech / BK RH). Aucun renouvellement manuel.   ║
 // ╚══════════════════════════════════════════════════════════════════════╝
-const DROPBOX_TOKEN = '';
-const DROPBOX_FOLDER = '/Fiscal_Hub/Batiments'; // dossier racine dans ton Dropbox
+const DBX_APP_KEY      = '6kd1aik85onauhp';
+const DBX_APP_SECRET   = 'g6e5porghtvb3bj';
+const DBX_REFRESH      = 'F6C-8ThwoWAAAAAAAAAAAR_PFhpznojC-BOy_-bb2j5ilVFeD2SOZVkxKfo6DiwJ';
+const DROPBOX_FOLDER   = '/Batiments'; // racine bâtiments dans l'App folder Fiscal Vincent
+const DROPBOX_TOKEN    = 'refresh'; // sentinelle : active l'upload (le vrai token vient de dbxToken())
+
+// Cache de l'access token (valable ~4h) — renouvelé automatiquement
+let _dbxTok = null, _dbxExp = 0;
+async function dbxToken() {
+  const now = Date.now();
+  if(_dbxTok && now < _dbxExp - 60000) return _dbxTok; // encore valable
+  const body = new URLSearchParams({
+    grant_type:'refresh_token', refresh_token:DBX_REFRESH,
+    client_id:DBX_APP_KEY, client_secret:DBX_APP_SECRET
+  });
+  const r = await fetch('https://api.dropboxapi.com/oauth2/token', {method:'POST', body});
+  if(!r.ok) throw new Error('Auth Dropbox échouée ('+r.status+')');
+  const j = await r.json();
+  _dbxTok = j.access_token;
+  _dbxExp = now + (j.expires_in ? j.expires_in*1000 : 14400000);
+  return _dbxTok;
+}
 
 function renderDocs(b) {
-  const dbxOn = DROPBOX_TOKEN && DROPBOX_TOKEN.length > 20;
+  const dbxOn = DROPBOX_TOKEN;
   const rows = (b.docs||[]).map((d,i)=>{
     const ouvrir = d.url
       ? `<a href="${d.url}" target="_blank" rel="noopener" class="btn" style="font-size:11px;padding:3px 9px;">Ouvrir</a>`
@@ -1709,7 +1737,7 @@ async function uploadBatDoc() {
   b.docs = b.docs || [];
   const doc = { nom:nom, type:cat, date:new Date().toLocaleDateString('fr-FR'), path:path, url:publicUrl };
   // Copie automatique vers Dropbox si un token est configuré (on réutilise le fichier en main)
-  if(DROPBOX_TOKEN && DROPBOX_TOKEN.length > 20) {
+  if(DROPBOX_TOKEN) {
     try { await pushDropbox(f, b.nom, cat, nom); doc.dropbox = true; status.textContent = 'Rangé sur Supabase + Dropbox ✓'; }
     catch(e) { status.innerHTML = '<span style="color:var(--warn);">Rangé sur Supabase ✓ — Dropbox a échoué ('+((e&&e.message)||'')+'). Le token a peut-être expiré.</span>'; }
   } else {
@@ -1734,13 +1762,14 @@ async function delDoc(i) {
 // Pousse un fichier (blob) vers Dropbox. Renvoie true si OK.
 // Le chemin Dropbox reflète le rangement : /Fiscal_Hub/Batiments/<bâtiment>/<catégorie>/<nom>
 async function pushDropbox(blob, batNom, cat, fileName) {
-  if(!(DROPBOX_TOKEN && DROPBOX_TOKEN.length > 20)) return false;
+  if(!DROPBOX_TOKEN) return false;
+  const tok = await dbxToken();
   const clean = s => (s||'').replace(/[\/\\:*?"<>|]/g,'_');
   const path = `${DROPBOX_FOLDER}/${clean(batNom)}/${clean(cat)}/${clean(fileName)}`;
   const res = await fetch('https://content.dropboxapi.com/2/files/upload', {
     method:'POST',
     headers:{
-      'Authorization':'Bearer '+DROPBOX_TOKEN,
+      'Authorization':'Bearer '+tok,
       'Dropbox-API-Arg': JSON.stringify({path:path, mode:'add', autorename:true, mute:false}),
       'Content-Type':'application/octet-stream'
     },
@@ -2642,9 +2671,11 @@ function updateSocBadge(name) {
   markSoc(detectSoc(name));
 }
 
-// ── IMPORT PAR SOCIÉTÉ (Supabase Storage + table societe_docs) ──
-const IS_BUCKET = 'societes';
+// ── IMPORT PAR SOCIÉTÉ (Dropbox « Fiscal Vincent » + index Supabase societe_docs) ──
+// Rangement Dropbox : /<Société>/<Exercice>/<Type>_<Société>_<date>.<ext>
+// Noms de dossiers société lisibles dans Dropbox
 const IS_SOC_LABEL = {vh:'VH Company',ba:'Burger Avenue 500',bka:'BK Avenue 526',bksj:'BK Saint-Jean 509',fvh:'FVH SARL',sci:'SCI VH Immo'};
+const IS_SOC_FOLDER = {vh:'VH_Company',ba:'Burger_Avenue_500',bka:'BK_Avenue_526',bksj:'BK_Saint_Jean_509',fvh:'FVH',sci:'SCI_VH_Immo'};
 
 // Remplit le sélecteur d'exercices (année courante → -6)
 function isFillYears() {
@@ -2660,43 +2691,77 @@ function isDov(e){e.preventDefault();document.getElementById('is-drop').classLis
 function isDol(){document.getElementById('is-drop').classList.remove('over');}
 function isDrop(e){e.preventDefault();isDol();isHandle(e.dataTransfer.files);}
 
-// Upload multi-fichiers pour la société/exercice/type sélectionnés
+// Crée (ou récupère) un lien de partage Dropbox affichable dans le navigateur
+async function dbxShareLink(tok, path) {
+  try {
+    const r = await fetch('https://api.dropboxapi.com/2/sharing/create_shared_link_with_settings', {
+      method:'POST', headers:{'Authorization':'Bearer '+tok,'Content-Type':'application/json'},
+      body: JSON.stringify({path})
+    });
+    if(r.ok) { const j = await r.json(); return (j.url||'').replace('?dl=0','?raw=1'); }
+    // déjà partagé → on récupère le lien existant
+    const j = await r.json();
+    if(j && j.error && j.error['.tag']==='shared_link_already_exists') {
+      const r2 = await fetch('https://api.dropboxapi.com/2/sharing/list_shared_links', {
+        method:'POST', headers:{'Authorization':'Bearer '+tok,'Content-Type':'application/json'},
+        body: JSON.stringify({path, direct_only:true})
+      });
+      if(r2.ok){ const j2 = await r2.json(); if(j2.links && j2.links[0]) return (j2.links[0].url||'').replace('?dl=0','?raw=1'); }
+    }
+  } catch(e) {}
+  return null;
+}
+
+// Upload multi-fichiers vers Dropbox pour la société/exercice/type sélectionnés
 async function isHandle(files) {
   const soc = document.getElementById('is-soc').value;
   const year = document.getElementById('is-year').value;
   const doctype = document.getElementById('is-doctype').value;
+  const dateStr = new Date().toISOString().slice(0,10); // AAAA-MM-JJ
+  const folder = IS_SOC_FOLDER[soc] || soc;
   for(const f of Array.from(files)) {
-    const ext = f.name.split('.').pop().toLowerCase();
-    const clean = f.name.replace(/[^a-zA-Z0-9._-]/g,'_');
-    const path = `${soc}/${year}/${doctype.replace(/[^a-zA-Z0-9]/g,'_')}_${Date.now()}_${clean}`;
-    // ligne provisoire
+    const ext = (f.name.split('.').pop()||'').toLowerCase();
+    const docClean = doctype.replace(/[^a-zA-Z0-9]/g,'_');
+    // Nom explicite + date : Bilan_VH_Company_2025-06-30.pdf
+    const niceName = `${docClean}_${folder}_${year}_${dateStr}.${ext}`;
+    const dbxPath = `/${folder}/${year}/${niceName}`;
     const tmp = isAddRow({nom:f.name, type:ext.toUpperCase(), doctype, year, statut:'up'});
-    let url = null, ok = false;
+    let url = null, ok = false, dropbox_path = dbxPath;
     try {
-      const {error: upErr} = await sb.storage.from(IS_BUCKET).upload(path, f, {upsert:true, contentType:f.type||undefined});
-      if(!upErr) {
-        const {data:pub} = sb.storage.from(IS_BUCKET).getPublicUrl(path);
-        url = pub ? pub.publicUrl : null;
-        ok = true;
-      }
-    } catch(e) {}
-    // enregistrement métadonnées
-    try {
-      await sb.from('societe_docs').insert({
-        societe: soc, exercice: parseInt(year), doctype, nom: f.name,
-        type: ext.toUpperCase(), taille: f.size, path, url, statut:'archive'
+      const tok = await dbxToken();
+      const up = await fetch('https://content.dropboxapi.com/2/files/upload', {
+        method:'POST',
+        headers:{
+          'Authorization':'Bearer '+tok,
+          'Dropbox-API-Arg': JSON.stringify({path:dbxPath, mode:'add', autorename:true, mute:false}),
+          'Content-Type':'application/octet-stream'
+        },
+        body: f
       });
-    } catch(e) {}
-    // aussi dans documents pour rétro-compat archive globale
-    try {
-      await sb.from('documents').insert({nom:f.name, type:ext.toUpperCase(), societe:'Société',
-        statut:'archive', donnees:{taille:f.size, societe_key:soc, exercice:year, doctype, path}});
-    } catch(e) {}
-    if(tmp) {
-      const st = tmp.querySelector('.fst');
-      if(st){ st.className = ok?'fst fst-ok':'fst fst-p'; st.textContent = ok?'Stocké ✓':'Métadonnées ✓'; }
+      if(up.ok){
+        const meta = await up.json();
+        dropbox_path = meta.path_lower || dbxPath;
+        url = await dbxShareLink(tok, dropbox_path);
+        ok = true;
+      } else {
+        let det=''; try{ det=(await up.json()).error_summary||''; }catch(e){}
+        if(tmp){ const st=tmp.querySelector('.fst'); if(st){st.className='fst';st.style.color='var(--danger)';st.textContent='Échec Dropbox';} }
+      }
+    } catch(e) {
+      if(tmp){ const st=tmp.querySelector('.fst'); if(st){st.className='fst';st.style.color='var(--danger)';st.textContent='Erreur Dropbox';} }
     }
-    markSoc(soc);
+    // Index dans Supabase (la table sert de catalogue, Dropbox stocke les fichiers)
+    if(ok) {
+      try {
+        await sb.from('societe_docs').insert({
+          societe: soc, exercice: parseInt(year), doctype, nom: f.name,
+          type: ext.toUpperCase(), taille: f.size,
+          dropbox_path, url, statut:'archive'
+        });
+      } catch(e) {}
+      if(tmp){ const st=tmp.querySelector('.fst'); if(st){st.className='fst fst-ok';st.textContent='Dropbox ✓';} }
+      markSoc(soc);
+    }
   }
   isRenderFiles();
 }
@@ -2709,10 +2774,10 @@ function isAddRow(d) {
   row.className = 'fitem';
   const ext = (d.type||'').toUpperCase();
   const dl = d.url ? `<a href="${d.url}" target="_blank" class="btn" style="font-size:11px;padding:3px 9px;">Ouvrir</a>` : '';
-  const del = d.id ? `<button class="btn" style="font-size:11px;padding:3px 9px;" onclick="isDelete('${d.id}','${(d.path||'').replace(/'/g,"")}')">Suppr.</button>` : '';
+  const del = d.id ? `<button class="btn" style="font-size:11px;padding:3px 9px;" onclick="isDelete('${d.id}','${(d.dropbox_path||'').replace(/'/g,"")}')">Suppr.</button>` : '';
   row.innerHTML = `<div class="fext ${ext==='CSV'?'csv':''}">${ext}</div>
 <div class="finfo"><div class="fname">${d.nom}</div><div class="fmeta">${d.doctype||''} · Exercice ${d.year||d.exercice||''}</div></div>
-<div style="display:flex;gap:6px;align-items:center;">${dl}${del}<span class="fst ${d.statut==='archive'?'fst-ok':'fst-p'}">${d.statut==='archive'?'Stocké ✓':(d.statut==='up'?'…':'')}</span></div>`;
+<div style="display:flex;gap:6px;align-items:center;">${dl}${del}<span class="fst ${d.statut==='archive'?'fst-ok':'fst-p'}">${d.statut==='archive'?'Dropbox ✓':(d.statut==='up'?'…':'')}</span></div>`;
   list.prepend(row);
   return row;
 }
@@ -2746,15 +2811,154 @@ async function isRenderFiles() {
   });
 }
 
-// Supprime un fichier (storage + métadonnées)
-async function isDelete(id, path) {
-  if(!confirm('Supprimer ce fichier ?')) return;
-  try { if(path) await sb.storage.from(IS_BUCKET).remove([path]); } catch(e) {}
+// Supprime un fichier (Dropbox + index)
+async function isDelete(id, dropbox_path) {
+  if(!confirm('Supprimer ce fichier (Dropbox + index) ?')) return;
+  try {
+    if(dropbox_path){
+      const tok = await dbxToken();
+      await fetch('https://api.dropboxapi.com/2/files/delete_v2', {
+        method:'POST', headers:{'Authorization':'Bearer '+tok,'Content-Type':'application/json'},
+        body: JSON.stringify({path:dropbox_path})
+      });
+    }
+  } catch(e) {}
   try { await sb.from('societe_docs').delete().eq('id', id); } catch(e) {}
   isRenderFiles();
 }
 
+// ── BLOC IMPORT INTÉGRÉ DANS CHAQUE PAGE SOCIÉTÉ (.socimp) ──
+// Réutilise dbxToken(), dbxShareLink(), IS_SOC_LABEL/FOLDER et la table societe_docs.
+function socImpYears() {
+  const now = new Date().getFullYear();
+  let o = '';
+  for(let y=now; y>=now-6; y--) o += `<option value="${y}"${y===now-1?' selected':''}>Exercice ${y}</option>`;
+  return o;
+}
+
+function buildSocImports() {
+  document.querySelectorAll('.socimp').forEach(box => {
+    const soc = box.dataset.soc;
+    box.innerHTML = `
+      <div class="card" style="margin-top:14px;">
+        <div class="card-title">📥 Importer les bilans — ${IS_SOC_LABEL[soc]||''}</div>
+        <div class="alert a-b" style="margin-bottom:12px;"><span>💡</span><div>Dépose ici les bilans, liasses, FEC… de <strong>${IS_SOC_LABEL[soc]||'cette société'}</strong> sur plusieurs exercices. Rangés dans Dropbox « Fiscal Vincent » en <code>/${IS_SOC_FOLDER[soc]||soc}/Exercice/</code>, renommés avec la date. Envoie-les aussi dans le chat pour que je les analyse.</div></div>
+        <div class="g2" style="margin-bottom:12px;">
+          <div class="sim-row" style="flex-direction:column;align-items:stretch;gap:4px;">
+            <label style="width:auto;">Exercice</label>
+            <select class="sim-in si-year" style="width:100%;font-family:var(--font);">${socImpYears()}</select>
+          </div>
+          <div class="sim-row" style="flex-direction:column;align-items:stretch;gap:4px;">
+            <label style="width:auto;">Type de document</label>
+            <select class="sim-in si-doctype" style="width:100%;font-family:var(--font);">
+              <option value="Bilan">Bilan (actif/passif)</option>
+              <option value="Compte de résultat">Compte de résultat</option>
+              <option value="Liasse fiscale">Liasse fiscale (2065/2033…)</option>
+              <option value="FEC">FEC</option>
+              <option value="Grand livre">Grand livre</option>
+              <option value="Balance">Balance</option>
+              <option value="Annexe">Annexe / autres</option>
+            </select>
+          </div>
+        </div>
+        <div class="drop si-drop" style="padding:22px;">
+          <div style="font-size:28px;margin-bottom:6px;">🏢📎</div>
+          <h3>Glisse les fichiers de ${IS_SOC_LABEL[soc]||'la société'} ici</h3>
+          <p style="font-size:12px;">PDF · XLSX · CSV · JPG — plusieurs fichiers acceptés</p>
+          <input type="file" class="si-input" multiple accept=".pdf,.csv,.xlsx,.xls,.jpg,.jpeg,.png" style="display:none;">
+        </div>
+        <div class="si-list" style="margin-top:12px;"></div>
+      </div>`;
+    const drop = box.querySelector('.si-drop');
+    const input = box.querySelector('.si-input');
+    drop.addEventListener('click', ()=>input.click());
+    drop.addEventListener('dragover', e=>{e.preventDefault();drop.classList.add('over');});
+    drop.addEventListener('dragleave', ()=>drop.classList.remove('over'));
+    drop.addEventListener('drop', e=>{e.preventDefault();drop.classList.remove('over');socImpHandle(box, e.dataTransfer.files);});
+    input.addEventListener('change', ()=>socImpHandle(box, input.files));
+    socImpRender(box);
+  });
+}
+
+// Upload multi-fichiers depuis un bloc société
+async function socImpHandle(box, files) {
+  const soc = box.dataset.soc;
+  const year = box.querySelector('.si-year').value;
+  const doctype = box.querySelector('.si-doctype').value;
+  const dateStr = new Date().toISOString().slice(0,10);
+  const folder = IS_SOC_FOLDER[soc] || soc;
+  const list = box.querySelector('.si-list');
+  for(const f of Array.from(files)) {
+    const ext = (f.name.split('.').pop()||'').toLowerCase();
+    const docClean = doctype.replace(/[^a-zA-Z0-9]/g,'_');
+    const niceName = `${docClean}_${folder}_${year}_${dateStr}.${ext}`;
+    const dbxPath = `/${folder}/${year}/${niceName}`;
+    const tmp = socImpRow(list, {nom:f.name, type:ext.toUpperCase(), doctype, exercice:year, statut:'up'});
+    let url = null, ok = false, dropbox_path = dbxPath;
+    try {
+      const tok = await dbxToken();
+      const up = await fetch('https://content.dropboxapi.com/2/files/upload', {
+        method:'POST',
+        headers:{'Authorization':'Bearer '+tok,'Dropbox-API-Arg':JSON.stringify({path:dbxPath,mode:'add',autorename:true,mute:false}),'Content-Type':'application/octet-stream'},
+        body: f
+      });
+      if(up.ok){ const meta=await up.json(); dropbox_path=meta.path_lower||dbxPath; url=await dbxShareLink(tok,dropbox_path); ok=true; }
+      else { const st=tmp&&tmp.querySelector('.fst'); if(st){st.className='fst';st.style.color='var(--danger)';st.textContent='Échec Dropbox';} }
+    } catch(e){ const st=tmp&&tmp.querySelector('.fst'); if(st){st.className='fst';st.style.color='var(--danger)';st.textContent='Erreur Dropbox';} }
+    if(ok){
+      try { await sb.from('societe_docs').insert({societe:soc,exercice:parseInt(year),doctype,nom:f.name,type:ext.toUpperCase(),taille:f.size,dropbox_path,url,statut:'archive'}); } catch(e){}
+      const st=tmp&&tmp.querySelector('.fst'); if(st){st.className='fst fst-ok';st.textContent='Dropbox ✓';}
+      markSoc(soc);
+    }
+  }
+  socImpRender(box);
+}
+
+// Ligne visuelle dans un bloc société
+function socImpRow(list, d) {
+  if(!list) return null;
+  const row = document.createElement('div');
+  row.className = 'fitem';
+  const ext = (d.type||'').toUpperCase();
+  const dl = d.url ? `<a href="${d.url}" target="_blank" class="btn" style="font-size:11px;padding:3px 9px;">Ouvrir</a>` : '';
+  const del = d.id ? `<button class="btn" style="font-size:11px;padding:3px 9px;" onclick="socImpDelete(this,'${d.id}','${(d.dropbox_path||'').replace(/'/g,"")}')">Suppr.</button>` : '';
+  row.innerHTML = `<div class="fext ${ext==='CSV'?'csv':''}">${ext}</div>
+<div class="finfo"><div class="fname">${d.nom}</div><div class="fmeta">${d.doctype||''} · Exercice ${d.exercice||''}</div></div>
+<div style="display:flex;gap:6px;align-items:center;">${dl}${del}<span class="fst ${d.statut==='archive'?'fst-ok':'fst-p'}">${d.statut==='archive'?'Dropbox ✓':(d.statut==='up'?'…':'')}</span></div>`;
+  list.prepend(row);
+  return row;
+}
+
+// Affiche les fichiers déjà importés d'une société
+async function socImpRender(box) {
+  const soc = box.dataset.soc;
+  const list = box.querySelector('.si-list');
+  if(!list) return;
+  list.innerHTML = '<div style="color:var(--text3);font-size:12px;padding:6px 0;">Chargement…</div>';
+  let docs = [];
+  try { const {data}=await sb.from('societe_docs').select('*').eq('societe',soc).order('exercice',{ascending:false}).order('created_at',{ascending:false}); docs=data||[]; } catch(e){}
+  if(!docs.length){ list.innerHTML='<div style="color:var(--text3);font-size:12px;padding:6px 0;text-align:center;">Aucun fichier encore — dépose les bilans des derniers exercices ci-dessus.</div>'; return; }
+  list.innerHTML='';
+  const byYear={}; docs.forEach(d=>{(byYear[d.exercice]=byYear[d.exercice]||[]).push(d);});
+  Object.keys(byYear).sort((a,b)=>b-a).forEach(y=>{
+    const h=document.createElement('div');
+    h.style.cssText='font-size:11px;font-weight:600;color:var(--text2);margin:10px 0 4px;letter-spacing:.5px;';
+    h.textContent='EXERCICE '+y+' · '+byYear[y].length+' fichier'+(byYear[y].length>1?'s':'');
+    list.appendChild(h);
+    byYear[y].forEach(d=>socImpRow(list,d));
+  });
+}
+
+// Suppression depuis un bloc société
+async function socImpDelete(btn, id, dropbox_path) {
+  if(!confirm('Supprimer ce fichier (Dropbox + index) ?')) return;
+  try { if(dropbox_path){ const tok=await dbxToken(); await fetch('https://api.dropboxapi.com/2/files/delete_v2',{method:'POST',headers:{'Authorization':'Bearer '+tok,'Content-Type':'application/json'},body:JSON.stringify({path:dropbox_path})}); } } catch(e){}
+  try { await sb.from('societe_docs').delete().eq('id', id); } catch(e){}
+  const box = btn.closest('.socimp'); if(box) socImpRender(box);
+}
+
 // ── START ──
+buildSocImports();
 isFillYears();
 isRenderFiles();
 init();
