@@ -229,7 +229,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:14
 <div id="tab-dashboard" class="panel active">
   <div style="display:flex;justify-content:flex-end;margin-bottom:10px;">
     <span id="maj-badge" style="display:inline-flex;align-items:center;gap:6px;background:var(--success-l);color:var(--success);font-size:11px;font-weight:600;font-family:var(--mono);padding:4px 11px;border-radius:20px;border:1px solid rgba(22,101,52,0.2);">
-      <span style="font-size:9px;">●</span> Mis à jour le vendredi 12 juin 2026 à 01h45
+      <span style="font-size:9px;">●</span> Mis à jour le vendredi 12 juin 2026 à 09h24
     </span>
   </div>
   <!-- Optimisation panel toujours visible -->
@@ -517,34 +517,22 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:14
 <!-- AUTRES SOCIETES -->
 <div id="tab-soc-ba" class="panel">
   <div class="alert a-b"><span>▣</span><div><strong>Burger Avenue SARL</strong> — SARL · Restauration · Montpellier (BK 500). Détenue à 100% par VH Company.</div></div>
-  <div class="card">
-    <div class="card-title">Suivi par exercice</div>
-    <div style="color:var(--text3);font-size:13px;text-align:center;padding:18px;">En attente des bilans. Dépose-les ci-dessous et envoie-les-moi dans le chat : je remplis le suivi exercice par exercice à partir de 2023 (CA, résultat, capitaux propres, compte courant avec la holding, dividende remonté).</div>
-  </div>
+  <div class="fin-zone" data-soc="ba"><div class="card"><div class="card-title">Suivi par exercice</div><div style="color:var(--text3);font-size:13px;text-align:center;padding:18px;">En attente du bilan. Dépose-le ci-dessous : l'application le lira automatiquement et remplira les chiffres ici (résultat, capitaux propres, comptes courants, dividendes…).</div></div></div>
   <div class="socimp" data-soc="ba"></div>
 </div>
 <div id="tab-soc-bka" class="panel">
   <div class="alert a-b"><span>▣</span><div><strong>BK Avenue SARL</strong> — SARL · Restauration · St-Clément-de-Rivière (BK 526). Détenue à 100% par VH Company. TVA : FR30830144242.</div></div>
-  <div class="card">
-    <div class="card-title">Suivi par exercice</div>
-    <div style="color:var(--text3);font-size:13px;text-align:center;padding:18px;">En attente des bilans. Dépose-les ci-dessous et envoie-les-moi dans le chat : je remplis le suivi exercice par exercice à partir de 2023 (CA, résultat, capitaux propres, compte courant avec la holding, dividende remonté).</div>
-  </div>
+  <div class="fin-zone" data-soc="bka"><div class="card"><div class="card-title">Suivi par exercice</div><div style="color:var(--text3);font-size:13px;text-align:center;padding:18px;">En attente du bilan. Dépose-le ci-dessous : l'application le lira automatiquement et remplira les chiffres ici (résultat, capitaux propres, comptes courants, dividendes…).</div></div></div>
   <div class="socimp" data-soc="bka"></div>
 </div>
 <div id="tab-soc-bksj" class="panel">
   <div class="alert a-b"><span>▣</span><div><strong>BK Saint-Jean SARL</strong> — SARL · Restauration · St-Jean-de-Védas (BK 509). Détenue à 100% par VH Company.</div></div>
-  <div class="card">
-    <div class="card-title">Suivi par exercice</div>
-    <div style="color:var(--text3);font-size:13px;text-align:center;padding:18px;">En attente des bilans. Dépose-les ci-dessous et envoie-les-moi dans le chat : je remplis le suivi exercice par exercice à partir de 2023 (CA, résultat, capitaux propres, compte courant avec la holding, dividende remonté).</div>
-  </div>
+  <div class="fin-zone" data-soc="bksj"><div class="card"><div class="card-title">Suivi par exercice</div><div style="color:var(--text3);font-size:13px;text-align:center;padding:18px;">En attente du bilan. Dépose-le ci-dessous : l'application le lira automatiquement et remplira les chiffres ici (résultat, capitaux propres, comptes courants, dividendes…).</div></div></div>
   <div class="socimp" data-soc="bksj"></div>
 </div>
 <div id="tab-soc-fvh" class="panel">
   <div class="alert a-b"><span>▣</span><div><strong>FVH SARL</strong> — SARL détenue à 100% par VH Company.</div></div>
-  <div class="card">
-    <div class="card-title">Suivi par exercice</div>
-    <div style="color:var(--text3);font-size:13px;text-align:center;padding:18px;">En attente des bilans. Dépose-les ci-dessous et envoie-les-moi dans le chat : je remplis le suivi exercice par exercice à partir de 2023 (résultat, capitaux propres, compte courant avec la holding).</div>
-  </div>
+  <div class="fin-zone" data-soc="fvh"><div class="card"><div class="card-title">Suivi par exercice</div><div style="color:var(--text3);font-size:13px;text-align:center;padding:18px;">En attente du bilan. Dépose-le ci-dessous : l'application le lira automatiquement et remplira les chiffres ici (résultat, capitaux propres, comptes courants…).</div></div></div>
   <div class="socimp" data-soc="fvh"></div>
 </div>
 <div id="tab-soc-sci" class="panel">
@@ -2804,7 +2792,8 @@ async function isDelete(id, dropbox_path) {
 function socImpYears() {
   const now = new Date().getFullYear();
   let o = '';
-  for(let y=now; y>=2023; y--) o += `<option value="${y}"${y===now-1?' selected':''}>Exercice ${y}</option>`;
+  const top = Math.max(now+2, 2028);
+  for(let y=top; y>=2023; y--) o += `<option value="${y}"${y===now?' selected':''}>Exercice ${y}</option>`;
   return o;
 }
 
@@ -2937,11 +2926,12 @@ async function socImpRender(box) {
     else docs = res.data || [];
   } catch(e){ readErr = (e&&e.message)||'exception'; }
   const byYear={}; docs.forEach(d=>{(byYear[d.exercice]=byYear[d.exercice]||[]).push(d);});
-  // Frise des exercices 2023 → année courante : statut bilan + PV d'AG par année
+  // Frise des exercices 2023 → futurs : statut bilan + PV d'AG par année
   if(frise) {
     const now = new Date().getFullYear();
     let html = '';
-    for(let y=now; y>=2023; y--) {
+    const top = Math.max(now+2, 2028);
+    for(let y=top; y>=2023; y--) {
       const items = byYear[y] || [];
       const hasBilan = items.some(d => /bilan|compte de r|liasse|fec|grand livre|balance/i.test(d.doctype||''));
       const hasAG = items.some(d => /assembl|pv|a\.?g\.?/i.test(d.doctype||''));
@@ -3095,29 +3085,40 @@ async function extraireBilanIA(box, file, soc, year, rowEl) {
   note.textContent='🤖 Lecture automatique du bilan en cours… (cela peut prendre 10-20 secondes)';
   if(zone) zone.prepend(note);
   try {
-    const imgs = await pdfToImages(file, 6);
+    const imgs = await pdfToImages(file, 10);
     const content = imgs.map(b64 => ({type:'image', source:{type:'base64', media_type:'image/jpeg', data:b64}}));
     content.push({type:'text', text:
-`Tu es expert-comptable. Voici les pages d'un bilan d'une société française (${IS_SOC_LABEL[soc]||soc}, exercice ${year}). Extrais les chiffres clés et réponds UNIQUEMENT par un objet JSON, sans aucun texte autour, avec ces clés (mets null si absent) :
+`Tu es expert-comptable. Voici les pages d'un bilan d'une société française (${IS_SOC_LABEL[soc]||soc}, exercice ${year}). Extrais TOUS les chiffres clés et réponds UNIQUEMENT par un objet JSON valide, sans aucun texte autour, sans backticks. Mets null si une valeur est absente. Les nombres sont en euros, entiers, sans espaces ni symboles (un déficit est négatif).
 {
+ "date_cloture": "JJ/MM/AAAA",
+ "duree_mois": nombre,
+ "chiffre_affaires": nombre,
+ "resultat_exploitation": nombre,
+ "resultat_financier": nombre,
+ "resultat_courant": nombre,
  "resultat_net": nombre,
  "resultat_fiscal": nombre,
- "capitaux_propres": nombre,
+ "ebe": nombre,
  "capital_social": nombre,
+ "reserve_legale": nombre,
  "report_a_nouveau": nombre,
- "reserves": nombre,
+ "autres_reserves": nombre,
+ "capitaux_propres": nombre,
  "total_bilan": nombre,
  "tresorerie": nombre,
- "chiffre_affaires": nombre,
+ "dettes_financieres": nombre,
+ "dettes_fournisseurs": nombre,
  "dividendes_verses": nombre,
- "cc_associes_passif": nombre,
- "cc_groupe_actif": nombre,
- "date_cloture": "JJ/MM/AAAA"
+ "dividendes_recus_filiales": nombre,
+ "cc_associes_passif_total": nombre,
+ "cc_associe_dirigeant": nombre,
+ "cc_groupe_actif_total": nombre,
+ "comptes_courants_detail": [ {"nom": "nom société ou personne", "sens": "actif" ou "passif", "montant": nombre } ]
 }
-Les nombres sont en euros, sans espaces ni symboles.`});
+Pour comptes_courants_detail : "actif" = la société liée DOIT de l'argent à cette entreprise (créance) ; "passif" = cette entreprise DOIT de l'argent (dette envers associé/groupe). Liste chaque compte courant 451/455 trouvé avec son nom exact (ex: BK AVENUE, SCI VH IMMO, VINCENT HILAIRE...).`});
     const r = await fetch('/api/ia', {
       method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ model:'claude-sonnet-4-5', max_tokens:1500, messages:[{role:'user', content}] })
+      body: JSON.stringify({ model:'claude-sonnet-4-5', max_tokens:2500, messages:[{role:'user', content}] })
     });
     const data = await r.json();
     if(!r.ok) throw new Error((data && data.error) || ('HTTP '+r.status));
@@ -3135,15 +3136,84 @@ Les nombres sont en euros, sans espaces ni symboles.`});
     } catch(e){}
     note.style.color='var(--success)';
     note.innerHTML = '✓ Bilan lu automatiquement — résultat net : <strong>'+(fin.resultat_net!=null?Math.round(fin.resultat_net).toLocaleString('fr-FR')+'€':'n.c.')+'</strong>, capitaux propres : <strong>'+(fin.capitaux_propres!=null?Math.round(fin.capitaux_propres).toLocaleString('fr-FR')+'€':'n.c.')+'</strong>';
+    renderSocFinances(soc);
   } catch(e) {
     note.style.color='var(--warn)';
     note.textContent='⚠ Lecture auto indisponible ('+((e&&e.message)||'')+'). Le fichier reste archivé ; tu peux me l\'envoyer dans le chat.';
   }
 }
 
+// ── AFFICHAGE DES CHIFFRES EXTRAITS (dernier exercice en grand + historique) ──
+const FIN_LABELS = [
+  ['chiffre_affaires',"Chiffre d'affaires"],['resultat_exploitation',"Résultat d'exploitation"],
+  ['resultat_financier','Résultat financier'],['resultat_courant','Résultat courant'],
+  ['resultat_net','Résultat net'],['resultat_fiscal','Résultat fiscal'],['ebe','EBE'],
+  ['capital_social','Capital social'],['reserve_legale','Réserve légale'],
+  ['report_a_nouveau','Report à nouveau'],['autres_reserves','Autres réserves'],
+  ['capitaux_propres','Capitaux propres'],['total_bilan','Total bilan'],
+  ['tresorerie','Trésorerie'],['dettes_financieres','Dettes financières'],
+  ['dettes_fournisseurs','Dettes fournisseurs'],['dividendes_verses','Dividendes versés'],
+  ['dividendes_recus_filiales','Dividendes reçus des filiales'],
+  ['cc_associes_passif_total','CC associés (passif)'],['cc_associe_dirigeant','CC dirigeant'],
+  ['cc_groupe_actif_total','CC groupe (actif)']
+];
+const eurF = n => (n===0)?'0€':(n!=null && !isNaN(n))?Math.round(n).toLocaleString('fr-FR')+'€':'—';
+
+async function renderSocFinances(soc) {
+  const zone = document.querySelector('.fin-zone[data-soc="'+soc+'"]');
+  if(!zone) return;
+  let rows = [];
+  try { const {data}=await sb.from('societe_finances').select('*').eq('societe',soc).order('exercice',{ascending:false}); rows=data||[]; } catch(e){}
+  if(!rows.length){ return; } // garde le message d'attente
+  const last = rows[0];
+  const d = last.donnees || {};
+  // KPI principaux du dernier exercice
+  const kpi = (label,val,cls)=>`<div class="kpi ${cls||''}"><div class="kl">${label}</div><div class="kv">${eurF(val)}</div><div class="ks">exercice ${last.exercice}</div></div>`;
+  let html = `<div class="alert a-g" style="margin-bottom:12px;"><span>✓</span><div>Chiffres extraits automatiquement du bilan <strong>${d.date_cloture||('exercice '+last.exercice)}</strong>. ${rows.length>1?('Historique sur '+rows.length+' exercices ci-dessous.'):''}</div></div>`;
+  html += `<div class="g4">${kpi('Résultat net',d.resultat_net,'acc')}${kpi('Capitaux propres',d.capitaux_propres)}${kpi("Chiffre d'affaires",d.chiffre_affaires)}${kpi('Trésorerie',d.tresorerie,'war')}</div>`;
+
+  // Compte de résultat + structure (dernier exercice)
+  html += `<div class="g2"><div class="card"><div class="card-title">Compte de résultat ${last.exercice}</div>`;
+  [['chiffre_affaires',"Chiffre d'affaires"],['resultat_exploitation',"Résultat d'exploitation"],['resultat_financier','Résultat financier'],['resultat_courant','Résultat courant'],['ebe','EBE'],['resultat_net','Résultat net'],['resultat_fiscal','Résultat fiscal']].forEach(([k,lab])=>{
+    if(d[k]!=null){ const neg=d[k]<0; html+=`<div class="row"><span class="rl">${lab}</span><span class="rv ${neg?'r':(k.includes('resultat')?'g':'')}">${eurF(d[k])}</span></div>`; }
+  });
+  html += `</div><div class="card"><div class="card-title">Structure & capitaux</div>`;
+  [['capital_social','Capital social'],['reserve_legale','Réserve légale'],['report_a_nouveau','Report à nouveau'],['autres_reserves','Autres réserves'],['capitaux_propres','Capitaux propres'],['total_bilan','Total bilan'],['dettes_financieres','Dettes financières'],['dividendes_verses','Dividendes versés']].forEach(([k,lab])=>{
+    if(d[k]!=null){ html+=`<div class="row"><span class="rl">${lab}</span><span class="rv ${k==='capitaux_propres'?'g':''}">${eurF(d[k])}</span></div>`; }
+  });
+  html += `</div></div>`;
+
+  // Comptes courants détaillés (qui doit à qui)
+  if(Array.isArray(d.comptes_courants_detail) && d.comptes_courants_detail.length){
+    html += `<div class="card"><div class="card-title">🔄 Comptes courants au ${d.date_cloture||last.exercice} — qui doit à qui</div><table class="tbl"><thead><tr><th>Compte</th><th>Sens</th><th class="r">Montant</th></tr></thead><tbody>`;
+    d.comptes_courants_detail.forEach(cc=>{
+      const actif = (cc.sens||'').toLowerCase().startsWith('a');
+      const tag = actif ? '<span class="tag tag-g">Créance (on doit à cette société)</span>' : '<span class="tag tag-w">Dette (cette société doit)</span>';
+      html += `<tr><td><strong>${cc.nom||'—'}</strong></td><td>${tag}</td><td class="r">${eurF(cc.montant)}</td></tr>`;
+    });
+    html += `</tbody></table></div>`;
+  }
+
+  // Historique multi-exercices
+  if(rows.length>1){
+    const cols = rows.slice().sort((a,b)=>a.exercice-b.exercice);
+    html += `<div class="card"><div class="card-title">📊 Historique par exercice</div><div style="overflow-x:auto;"><table class="tbl"><thead><tr><th>Poste</th>${cols.map(r=>'<th class="r">'+r.exercice+'</th>').join('')}</tr></thead><tbody>`;
+    FIN_LABELS.forEach(([k,lab])=>{
+      const vals = cols.map(r=>(r.donnees||{})[k]);
+      if(vals.some(v=>v!=null)){
+        html += `<tr><td>${lab}</td>${vals.map(v=>'<td class="r">'+eurF(v)+'</td>').join('')}</tr>`;
+      }
+    });
+    html += `</tbody></table></div></div>`;
+  }
+
+  zone.innerHTML = html;
+}
+
 // ── START ──
 virRefreshAll();
 buildSocImports();
+['vh','ba','bka','bksj','fvh','sci'].forEach(s=>renderSocFinances(s));
 init();
 </script>
 </body>
