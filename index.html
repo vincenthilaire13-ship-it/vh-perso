@@ -232,7 +232,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:14
 <div id="tab-dashboard" class="panel active">
   <div style="display:flex;justify-content:flex-end;margin-bottom:10px;">
     <span id="maj-badge" style="display:inline-flex;align-items:center;gap:6px;background:var(--success-l);color:var(--success);font-size:11px;font-weight:600;font-family:var(--mono);padding:4px 11px;border-radius:20px;border:1px solid rgba(22,101,52,0.2);">
-      <span style="font-size:9px;">●</span> Mis à jour le vendredi 12 juin 2026 à 17h46
+      <span style="font-size:9px;">●</span> Mis à jour le vendredi 12 juin 2026 à 17h56
     </span>
   </div>
   <!-- Optimisation panel toujours visible -->
@@ -1535,7 +1535,10 @@ async function delFactu(i) {
 
 // ===== TAXE FONCIERE (par année) =====
 function renderTaxe(b) {
-  const rows = (b.taxes||[]).map((t,i)=>`
+  // tri par année décroissante (récente en haut) en conservant l'index réel pour la suppression
+  const taxesIdx = (b.taxes||[]).map((t,i)=>({t,i}))
+    .sort((a,c)=>(Number(c.t.annee)||0)-(Number(a.t.annee)||0));
+  const rows = taxesIdx.map(({t,i})=>`
     <tr><td>${t.annee||'—'}</td><td class="r">${eurB(t.montant)}</td><td class="r">${t.refacturee?'<span class="tag tag-b">Refacturée locataire</span>':'<span class="tag tag-gr">À ta charge</span>'}</td><td class="r"><span style="cursor:pointer;color:var(--danger);" onclick="delTaxe(${i})">×</span></td></tr>`).join('');
   document.getElementById('bat-sub-taxe').innerHTML = batDocZone(b,'taxe') + `
   <div class="card">
@@ -1564,33 +1567,78 @@ async function delTaxe(i) {
 }
 
 // ===== SYNDIC =====
+// Déduit l'année d'un appel ou d'un document syndic
+function syndicYear(x){
+  if(x && x.annee!=null) return String(x.annee);
+  const e = x && x.extrait;
+  if(e && e.annee!=null) return String(e.annee);
+  const txt = String((x&&(x.periode||x.echeance||x.date||x.date_doc||x.titre))||(e&&(e.periode||e.date_echeance))||'');
+  const m = txt.match(/(20\d{2})/);
+  return m ? m[1] : '?';
+}
 function renderSyndic(b) {
   const s = b.syndic;
   const appels = s.appels||[];
-  // Analyse : total payé, total par année, part refacturable au locataire
+  const docs = (b.docs||[]).filter(d=>(d.cat||'')==='syndic');
+  // Totaux globaux
   const total = appels.reduce((x,a)=>x+(Number(a.montant)||0),0);
   const refac = appels.filter(a=>a.refacture).reduce((x,a)=>x+(Number(a.montant)||0),0);
   const aTaCharge = total - refac;
-  // Regroupement par année (déduite de l'année explicite, sinon des 4 chiffres de la période/date)
-  const parAnnee = {};
-  appels.forEach(a=>{
-    let y = a.annee;
-    if(y==null){ const m=String(a.periode||a.date||'').match(/(20\d{2})/); if(m) y=m[1]; }
-    y = y||'?';
-    parAnnee[y] = (parAnnee[y]||0) + (Number(a.montant)||0);
-  });
-  const anneesRows = Object.keys(parAnnee).sort((x,y)=>String(y).localeCompare(String(x)))
-    .map(y=>`<tr><td>${y}</td><td class="r">${eurB(parAnnee[y])}</td></tr>`).join('');
-  const rows = appels.map((a,i)=>{
-    const periode = a.periode || a.date || '—';
-    const nature = a.nature ? `<div style="font-size:11px;color:var(--text3);">${a.nature}</div>` : '';
-    const echeance = a.echeance || a.date || '—';
-    const refacTag = a.refacture
-      ? '<span class="tag tag-b" style="cursor:pointer;font-size:10px;" onclick="togSyndicRefac('+i+')">Refacturé locataire</span>'
-      : '<span class="tag tag-gr" style="cursor:pointer;font-size:10px;" onclick="togSyndicRefac('+i+')">À ta charge</span>';
-    return `<tr><td>${periode}${nature}</td><td class="r">${eurB(a.montant)}</td><td class="r">${echeance}</td><td class="r">${refacTag}</td><td class="r"><span style="cursor:pointer;color:var(--danger);" onclick="delSyndicAppel(${i})">×</span></td></tr>`;
+
+  // Regroupe appels ET documents par année
+  const annees = new Set();
+  appels.forEach(a=>annees.add(syndicYear(a)));
+  docs.forEach(d=>annees.add(syndicYear(d)));
+  const anneesTri = Array.from(annees).sort((x,y)=>String(y).localeCompare(String(x))); // récent en haut
+
+  // Construit un bloc par année : documents (PDF) + appels de fonds de cette année
+  const blocs = anneesTri.map(y=>{
+    const aIdx = appels.map((a,i)=>({a,i})).filter(o=>syndicYear(o.a)===y);
+    const dY = docs.filter(d=>syndicYear(d)===y);
+    const totalY = aIdx.reduce((x,o)=>x+(Number(o.a.montant)||0),0);
+    // documents PDF de l'année
+    const docRows = dY.map(d=>{
+      const gIdx = (b.docs||[]).indexOf(d);
+      const lu = d.extrait ? '<span class="tag tag-g" style="font-size:10px;">✓ lu</span>' : '<span class="tag tag-w" style="font-size:10px;">⚠ non lu</span>';
+      const ouvrir = d.url ? `<a href="${d.url}" target="_blank" rel="noopener" class="btn" style="font-size:11px;padding:3px 9px;">📄 Ouvrir</a>` : '';
+      const relire = d.dropbox_path ? `<button class="btn" style="font-size:11px;padding:3px 9px;" onclick="batDocRelire(${gIdx},'syndic')">🔄 Relire</button>` : '';
+      return `<tr><td>📄 ${d.titre||d.nom||'Document'} ${lu}</td><td class="r" style="white-space:nowrap;">${ouvrir} ${relire} <span style="cursor:pointer;color:var(--danger);padding:0 4px;" onclick="batDocDelete(${gIdx})">×</span></td></tr>`;
+    }).join('');
+    // appels de fonds de l'année
+    const appelRows = aIdx.map(({a,i})=>{
+      const nature = a.nature ? ` — <span style="color:var(--text3);">${a.nature}</span>` : '';
+      const refacTag = a.refacture
+        ? '<span class="tag tag-b" style="cursor:pointer;font-size:10px;" onclick="togSyndicRefac('+i+')">Refacturé locataire</span>'
+        : '<span class="tag tag-gr" style="cursor:pointer;font-size:10px;" onclick="togSyndicRefac('+i+')">À ta charge</span>';
+      return `<tr><td>${a.periode||a.echeance||'Appel'}${nature}</td><td class="r">${eurB(a.montant)}</td><td class="r">${refacTag}</td><td class="r"><span style="cursor:pointer;color:var(--danger);" onclick="delSyndicAppel(${i})">×</span></td></tr>`;
+    }).join('');
+    return `<div class="card" style="margin-bottom:10px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <div class="card-title" style="margin:0;">📅 ${y}</div>
+        <div style="font-weight:700;color:var(--accent);">${eurB(totalY)}</div>
+      </div>
+      ${docRows?`<table class="tbl" style="margin-top:8px;"><tbody>${docRows}</tbody></table>`:'<div style="font-size:12px;color:var(--text3);padding:4px 0;">Aucun document PDF pour cette année.</div>'}
+      ${appelRows?`<table class="tbl" style="margin-top:8px;"><thead><tr><th>Appel de fonds</th><th class="r">Montant</th><th class="r">Prise en charge</th><th></th></tr></thead><tbody>${appelRows}</tbody></table>`:''}
+    </div>`;
   }).join('');
-  document.getElementById('bat-sub-syndic').innerHTML = batDocZone(b,'syndic') + `
+
+  // Zone de dépôt (slim) — les PDF iront se ranger sous leur année automatiquement
+  const zoneId = 'batdrop-syndic';
+  const dropZone = `<div class="card" style="margin-bottom:12px;">
+    <div class="card-title">📎 Déposer un document syndic</div>
+    <div class="alert a-b" style="margin-bottom:10px;"><span>💡</span><div>Glisse un PDF (appel de fonds, relevé, PV d'AG). Il est sauvegardé dans Dropbox, lu automatiquement, et rangé <strong>sous son année</strong> ci-dessous. Tu peux en déposer plusieurs.</div></div>
+    <div id="${zoneId}" style="border:2px dashed var(--border);border-radius:10px;padding:16px;text-align:center;cursor:pointer;color:var(--text3);font-size:13px;"
+      onclick="document.getElementById('${zoneId}-input').click()"
+      ondragover="event.preventDefault();this.style.borderColor='var(--accent)';"
+      ondragleave="this.style.borderColor='var(--border)';"
+      ondrop="event.preventDefault();this.style.borderColor='var(--border)';batDocHandle('syndic', event.dataTransfer.files);">
+      📥 Glisse un PDF ici, ou clique pour choisir
+      <input id="${zoneId}-input" type="file" accept="application/pdf,image/*" multiple style="display:none;" onchange="batDocHandle('syndic', this.files)">
+    </div>
+    <div id="batdrop-status-syndic" style="font-size:12px;margin-top:8px;"></div>
+  </div>`;
+
+  document.getElementById('bat-sub-syndic').innerHTML = dropZone + `
   <div class="card">
     <div class="card-title">👥 Syndic — analyse des coûts</div>
     <div class="g4" style="margin-bottom:12px;">
@@ -1599,22 +1647,23 @@ function renderSyndic(b) {
       <div class="kpi suc"><div class="kl">Refacturé locataire</div><div class="kv">${eurB(refac)}</div></div>
       <div class="kpi"><div class="kl">Quote-part</div><div class="kv" style="font-size:15px;">${s.tantiemes||'—'}</div><div class="ks">millièmes</div></div>
     </div>
-    ${anneesRows?`<div class="card-title" style="font-size:14px;">Par année</div><table class="tbl" style="margin-bottom:14px;"><thead><tr><th>Année</th><th class="r">Total payé</th></tr></thead><tbody>${anneesRows}</tbody></table>`:''}
     <div style="display:flex;flex-wrap:wrap;gap:12px;">
       ${field('Nom du syndic','s-nom',s.nom,'text')}
       ${field('Contact','s-contact',s.contact,'text','tél / email')}
       ${field('Quote-part (millièmes)','s-tantiemes',s.tantiemes,'text')}
     </div>
     <button class="btn btn-p" style="margin-top:10px;" onclick="saveSyndic()">Enregistrer les infos syndic</button>
-    <div class="card-title" style="margin-top:18px;">Détail des appels de fonds — total ${eurB(total)}</div>
-    <table class="tbl"><thead><tr><th>Période / nature</th><th class="r">Montant</th><th class="r">Échéance</th><th class="r">Prise en charge</th><th></th></tr></thead>
-    <tbody>${rows||'<tr><td colspan="5" style="text-align:center;color:var(--text3);padding:12px;">Aucun appel de fonds. Dépose un document syndic ci-dessus, il sera lu automatiquement.</td></tr>'}</tbody></table>
-    <div style="display:flex;flex-wrap:wrap;gap:12px;margin-top:12px;border-top:1px dashed var(--border);padding-top:12px;">
+  </div>
+  <div class="card-title" style="margin:6px 0 10px;">Documents & appels par année</div>
+  ${blocs||'<div class="card" style="text-align:center;color:var(--text3);padding:14px;">Aucun document ni appel de fonds. Dépose un document syndic ci-dessus.</div>'}
+  <div class="card">
+    <div class="card-title">+ Ajouter un appel de fonds manuellement</div>
+    <div style="display:flex;flex-wrap:wrap;gap:12px;">
       ${field('Période','sa-periode','','text','ex : T1 2025')}
       ${field('Montant (€)','sa-montant','','number')}
       ${field('Échéance','sa-date','','text')}
     </div>
-    <button class="btn btn-p" style="margin-top:10px;" onclick="addSyndicAppel()">+ Ajouter un appel</button>
+    <button class="btn btn-p" style="margin-top:10px;" onclick="addSyndicAppel()">+ Ajouter</button>
   </div>`;
 }
 async function saveSyndic() {
