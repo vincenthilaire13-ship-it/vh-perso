@@ -232,7 +232,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:14
 <div id="tab-dashboard" class="panel active">
   <div style="display:flex;justify-content:flex-end;margin-bottom:10px;">
     <span id="maj-badge" style="display:inline-flex;align-items:center;gap:6px;background:var(--success-l);color:var(--success);font-size:11px;font-weight:600;font-family:var(--mono);padding:4px 11px;border-radius:20px;border:1px solid rgba(22,101,52,0.2);">
-      <span style="font-size:9px;">●</span> Mis à jour le vendredi 12 juin 2026 à 22h15
+      <span style="font-size:9px;">●</span> Mis à jour le vendredi 12 juin 2026 à 22h18
     </span>
   </div>
   <!-- Optimisation panel toujours visible -->
@@ -979,6 +979,17 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:14
 
 </div></div></div>
 
+<!-- MODAL LECTURE DOCUMENT (fiche de lecture, pas d'ouverture Dropbox) -->
+<div id="modal-doclire" style="display:none;position:fixed;inset:0;background:rgba(26,24,20,0.5);z-index:100;align-items:center;justify-content:center;padding:20px;">
+  <div style="background:var(--surface);border-radius:var(--rl);box-shadow:var(--shadow);max-width:560px;width:100%;max-height:85vh;overflow:auto;padding:22px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+      <div class="card-title" style="margin:0;" id="doclire-titre">Lecture du document</div>
+      <span style="cursor:pointer;font-size:20px;color:var(--text3);" onclick="closeDocLire()">×</span>
+    </div>
+    <div id="doclire-body"></div>
+  </div>
+</div>
+
 <!-- MODAL AJOUT FICHE ASSURANCE -->
 <div id="modal-fiche" style="display:none;position:fixed;inset:0;background:rgba(26,24,20,0.5);z-index:100;align-items:center;justify-content:center;padding:20px;">
   <div style="background:var(--surface);border-radius:var(--rl);box-shadow:var(--shadow);max-width:440px;width:100%;padding:22px;">
@@ -1557,32 +1568,39 @@ function renderAssur(b){
 // ===== PRET BANCAIRE (liste) =====
 function renderPret(b) {
   const cards = (b.prets||[]).map((p,i)=>{
+    // Chaque champ est cliquable pour correction directe (clé, label, type)
     const lignes = [
-      ['Banque', p.banque||'—'],
-      ['Capital emprunté', eurB(p.capital)],
-      ['Mensualité', p.mensualite!=null?eurB(p.mensualite)+' /mois':'—'],
-      ['Taux', p.taux!=null?p.taux+' %':'—'],
-      ['Durée', p.duree_mois!=null?p.duree_mois+' mois':'—'],
-      ['Début', p.debut||'—'],
-      ['Fin', p.fin||'—'],
-      ['Capital restant dû', eurB(p.crd)],
-      ['Assurance', p.assurance!=null?eurB(p.assurance)+' /mois':'—'],
-      ['Garantie', p.garantie||'—'],
-      ['N° prêt', p.numero||'—']
+      ['banque','Banque','text', p.banque||'—'],
+      ['capital','Capital emprunté','num', eurB(p.capital)],
+      ['mensualite','Mensualité','num', p.mensualite!=null?eurB(p.mensualite)+' /mois':'—'],
+      ['taux','Taux','num', p.taux!=null?p.taux+' %':'—'],
+      ['duree_mois','Durée (mois)','num', p.duree_mois!=null?p.duree_mois+' mois':'—'],
+      ['debut','Début','text', p.debut||'—'],
+      ['fin','Fin','text', p.fin||'—'],
+      ['crd','Capital restant dû','num', eurB(p.crd)],
+      ['assurance','Assurance','num', p.assurance!=null?eurB(p.assurance)+' /mois':'—'],
+      ['garantie','Garantie','text', p.garantie||'—'],
+      ['numero','N° prêt','text', p.numero||'—']
     ];
-    const cells = lignes.map(([k,val])=>`<div style="min-width:140px;"><div style="font-size:11px;color:var(--text3);">${k}</div><div style="font-weight:600;">${val}</div></div>`).join('');
+    const cells = lignes.map(([key,k,typ,val])=>`<div style="min-width:140px;cursor:pointer;" onclick="editPretField(${i},'${key}','${k}','${typ}')" title="Cliquer pour corriger">
+      <div style="font-size:11px;color:var(--text3);">${k} ✎</div>
+      <div style="font-weight:600;">${val}</div></div>`).join('');
     return `<div class="card" style="margin-bottom:10px;">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;">
         <div style="font-weight:700;font-size:15px;">🏦 ${p.banque||'Prêt'} ${p.capital!=null?'· '+eurB(p.capital):''}</div>
         <span style="cursor:pointer;color:var(--danger);" onclick="delPret(${i})" title="Supprimer">×</span>
       </div>
       <div style="display:flex;flex-wrap:wrap;gap:16px;margin-top:10px;">${cells}</div>
+      <div style="font-size:11px;color:var(--text3);margin-top:8px;">Clique sur une valeur pour la corriger.</div>
     </div>`;
   }).join('');
   document.getElementById('bat-sub-pret').innerHTML = batDocZone(b,'pret') + `
-  ${cards||'<div class="card" style="text-align:center;color:var(--text3);padding:14px;">Aucun prêt enregistré. Dépose le tableau d\'amortissement ou l\'offre de prêt ci-dessus : la banque, le capital, la mensualité, le taux, la durée et le capital restant dû seront lus automatiquement.</div>'}
-  <div class="card">
-    <div class="card-title">+ Ajouter / corriger un prêt manuellement</div>
+  ${cards||'<div class="card" style="text-align:center;color:var(--text3);padding:14px;">Aucun prêt enregistré. Dépose le tableau d\'amortissement ou l\'offre de prêt ci-dessus : banque, capital, mensualité, taux, durée et capital restant dû seront lus automatiquement.</div>'}
+  <div style="text-align:center;margin-top:6px;">
+    <button class="btn" onclick="document.getElementById('pret-add-form').style.display='block';this.style.display='none';">+ Ajouter un autre prêt manuellement</button>
+  </div>
+  <div class="card" id="pret-add-form" style="display:none;margin-top:10px;">
+    <div class="card-title">Nouveau prêt</div>
     <div style="display:flex;flex-wrap:wrap;gap:12px;">
       ${field('Banque','p-banque','','text')}
       ${field('Capital emprunté (€)','p-capital','','number')}
@@ -1597,6 +1615,15 @@ function renderPret(b) {
     </div>
     <button class="btn btn-p" style="margin-top:10px;" onclick="addPret()">+ Ajouter ce prêt</button>
   </div>`;
+}
+// Édition directe d'un champ de prêt (clic sur la valeur).
+async function editPretField(i, key, label, typ){
+  const b = batiments.find(x=>x.id===currentBat); if(!b||!b.prets[i]) return;
+  const cur = b.prets[i][key];
+  const saisie = prompt('Corriger « '+label+' » :', (cur!=null?cur:''));
+  if(saisie===null) return; // annulé
+  b.prets[i][key] = (typ==='num') ? numOrNull(saisie) : saisie.trim();
+  await saveBatToDb(b); renderPret(b); recomputeBat();
 }
 async function addPret() {
   const b = batiments.find(x=>x.id===currentBat); if(!b) return;
@@ -2127,11 +2154,11 @@ Type de document : offre / contrat / TABLEAU D'AMORTISSEMENT de PRÊT BANCAIRE.
 La date d'aujourd'hui est le ${ajStr}. Lis le document avec soin et DÉDUIS les valeurs qui ne sont pas écrites explicitement :
 - "capital" : le capital emprunté au départ (montant initial du prêt).
 - "mensualite" : l'échéance mensuelle (capital + intérêts), HORS assurance si l'assurance est sur une colonne séparée.
-- "assurance_mensuelle" : la cotisation d'assurance emprunteur par mois (colonne « assurance » du tableau, ou ligne dédiée). Si elle est incluse dans l'échéance globale, indique l'échéance totale dans "mensualite" et mets "assurance_mensuelle" à null.
+- "assurance_mensuelle" : la cotisation d'assurance emprunteur par mois (colonne « assurance » du tableau, ou ligne dédiée). Si l'assurance est incluse dans l'échéance globale sans détail séparé, mets null. Si le document montre clairement qu'il N'Y A PAS d'assurance emprunteur, mets 0 (pas null).
 - "taux" : le taux d'intérêt nominal annuel (%).
 - "date_debut" : la date de la PREMIÈRE échéance du tableau (1ʳᵉ ligne).
 - "date_fin" : la date de la DERNIÈRE échéance du tableau (dernière ligne).
-- "duree_mois" : le NOMBRE de mensualités. Si non écrit, DÉDUIS-le (nombre de lignes du tableau, ou écart en mois entre date_debut et date_fin).
+- "duree_mois" : le NOMBRE de mensualités. C'est presque TOUJOURS déductible — ne le laisse PAS à null : compte les lignes du tableau d'amortissement, OU calcule l'écart en mois entre date_debut et date_fin (ex : du 12/06/2019 au 12/06/2034 = 180 mois).
 - "crd" : le CAPITAL RESTANT DÛ à la date d'AUJOURD'HUI (${ajStr}). Dans un tableau d'amortissement, repère la ligne de la dernière échéance DÉJÀ PASSÉE (la plus récente avant ou égale à ${ajStr}) et lis la colonne « capital restant dû » / « solde » / « capital restant » de cette ligne. Ne prends NI le capital initial, NI la dernière ligne du tableau. Si tu ne peux pas localiser la date, prends la ligne dont le capital restant est cohérent avec le temps écoulé depuis date_debut.
 - "garantie" : type de garantie (hypothèque, caution, nantissement, PPD…) si mentionné, sinon null.
 - "numero_pret" : référence/numéro du prêt si présent.
@@ -2337,9 +2364,7 @@ function batDocZone(b, cat){
       else if(cat==='assur'){ if(e.type_assurance)bits.push(e.type_assurance); if(e.assureur)bits.push(e.assureur); if(e.prime_annuelle!=null)bits.push('Prime : '+eurB(e.prime_annuelle)); if(e.date_fin)bits.push('Fin : '+e.date_fin); }
       if(bits.length) resume = `<div style="font-size:11px;color:var(--text2);margin-top:2px;">${bits.join(' · ')}</div>`;
     }
-    const ouvrir = d.url
-      ? `<a href="${d.url}" target="_blank" rel="noopener" class="btn" style="font-size:11px;padding:3px 9px;">📄 Ouvrir</a>`
-      : `<span style="font-size:11px;color:var(--text3);">lien indisponible</span>`;
+    const ouvrir = `<button class="btn" style="font-size:11px;padding:3px 9px;" onclick="batDocLire(${gIdx})">👁 Lire</button>`;
     const dbxBadge = d.dropbox_path ? `<span class="tag tag-g" style="font-size:10px;">Dropbox ✓</span>` : '';
     const luBadge = d.extrait ? `<span class="tag tag-g" style="font-size:10px;">✓ lu</span>` : `<span class="tag tag-w" style="font-size:10px;">⚠ non lu</span>`;
     const relire = d.dropbox_path ? `<button class="btn" style="font-size:11px;padding:3px 9px;" onclick="batDocRelire(${gIdx},'${cat}')">🔄 Relire</button>` : '';
@@ -2351,7 +2376,7 @@ function batDocZone(b, cat){
   const zoneId = 'batdrop-'+cat;
   return `<div class="card" style="margin-bottom:12px;">
     <div class="card-title">📎 Documents — ${BAT_CAT_LABEL[cat]||cat}</div>
-    <div class="alert a-b" style="margin-bottom:10px;"><span>💡</span><div>Glisse un PDF ici : il est sauvegardé dans Dropbox (<code>/Batiments/${(b.nom||'').replace(/[\/\\:*?"<>|]/g,'_')}/${BAT_CATS[cat]||'Autres'}/</code>), lu automatiquement, et les champs ci-dessous sont pré-remplis. Tu peux en déposer plusieurs (baux, avenants, plusieurs prêts…). Clique « Ouvrir » pour lire le document.</div></div>
+    <div class="alert a-b" style="margin-bottom:10px;"><span>💡</span><div>Glisse un PDF ici : il est sauvegardé dans Dropbox (<code>/Batiments/${(b.nom||'').replace(/[\/\\:*?"<>|]/g,'_')}/${BAT_CATS[cat]||'Autres'}/</code>), lu automatiquement, et les champs ci-dessous sont pré-remplis. Tu peux en déposer plusieurs (baux, avenants, plusieurs prêts…). Clique « 👁 Lire » pour voir ce que l'IA a lu dans le document, sans ouvrir Dropbox.</div></div>
     <table class="tbl"><tbody>${rows||'<tr><td colspan="2" style="text-align:center;color:var(--text3);padding:10px;">Aucun document. Dépose le premier ci-dessous.</td></tr>'}</tbody></table>
     <div id="${zoneId}" style="margin-top:10px;border:2px dashed var(--border);border-radius:10px;padding:16px;text-align:center;cursor:pointer;color:var(--text3);font-size:13px;"
       onclick="document.getElementById('${zoneId}-input').click()"
@@ -2517,6 +2542,43 @@ function batApplyExtract(b, cat, d, opts){
   // caution / edl / diag / assur : pas de champs dédiés — les données extraites restent
   // dans le document lui-même (b.docs[].extrait) et sont affichées par batDocZone.
 }
+
+// Fiche de LECTURE d'un document dans l'app (n'ouvre PAS Dropbox).
+// Affiche proprement tout ce que l'IA a lu, libellé par libellé.
+function batDocLire(globalIdx){
+  const b = batiments.find(x=>x.id===currentBat); if(!b) return;
+  const d = (b.docs||[])[globalIdx]; if(!d) return;
+  const e = d.extrait || {};
+  const eur = v => (v!=null && v!=='') ? Math.round(Number(v)).toLocaleString('fr-FR')+' €' : '—';
+  const txt = v => (v!=null && v!=='') ? v : '—';
+  // Libellés par catégorie
+  const map = {
+    pret: [['Banque','banque',txt],['Capital emprunté','capital',eur],['Mensualité','mensualite',eur],['Taux','taux',v=>v!=null?v+' %':'—'],['Assurance emprunteur','assurance_mensuelle',eur],['Durée','duree_mois',v=>v!=null?v+' mois':'—'],['Début','date_debut',txt],['Fin','date_fin',txt],['Capital restant dû','crd',eur],['Garantie','garantie',txt],['N° prêt','numero_pret',txt]],
+    bail: [['Locataire','locataire',txt],['Bailleur','bailleur',txt],['Loyer mensuel HC','loyer_mensuel',eur],['Loyer annuel','loyer_annuel',eur],['Surface','surface',v=>v!=null?v+' m²':'—'],['Dépôt de garantie','depot_garantie',eur],['Charges','charges',eur],['Provision taxe foncière','provision_taxe_fonciere',eur],['Indexation','indexation',txt],['Date d\'effet','date_effet',txt],['Fin','date_fin',txt],['Durée','duree',txt],['Type','type_doc',txt]],
+    acq: [['Date d\'achat','date_achat',txt],['Prix d\'achat','prix_achat',eur],['Frais de notaire','frais_notaire',eur],['Étude notariale','etude_notariale',txt],['Vendeur','vendeur',txt],['Référence acte','reference_acte',txt],['Réf. cadastrale','reference_cadastrale',txt]],
+    caution: [['Caution','caution',txt],['Représentant','caution_representant',txt],['Locataire garanti','locataire_garanti',txt],['Bailleur','bailleur',txt],['Montant cautionné','montant_cautionne',eur],['Type','type_caution',txt],['Durée','duree',txt],['Date','date_acte',txt]],
+    edl: [['Nature','nature',txt],['Date','date_edl',txt],['Locataire','locataire',txt],['Surface','surface',v=>v!=null?v+' m²':'—'],['Observations','observations',txt]],
+    diag: [['Diagnostic','nature_diagnostic',txt],['Date','date_diagnostic',txt],['Validité','date_validite',txt],['Résultat','resultat',txt],['Diagnostiqueur','diagnostiqueur',txt]],
+    assur: [['Assureur','assureur',txt],['Souscripteur','souscripteur',txt],['Type','type_assurance',txt],['N° police','numero_police',txt],['Prime annuelle','prime_annuelle',eur],['Début','date_debut',txt],['Fin','date_fin',txt],['Garanties','garanties',txt]],
+    taxe: [['Année','annee',txt],['Montant','montant',eur],['Base d\'imposition','base_imposition',eur],['Commune','commune',txt],['Réf. cadastrale','reference_cadastrale',txt],['Date limite','date_limite_paiement',txt]],
+    syndic: [['Syndic','syndic',txt],['Période','periode',txt],['Montant appel','montant_appel',eur],['Année','annee',txt],['Échéance','date_echeance',txt],['Nature','nature',txt]],
+    factu: [['Locataire','locataire',txt],['Bailleur','bailleur',txt],['Période','periode',txt],['Loyer HC','loyer_hc',eur],['Provision charges','provision_charges',eur],['Provision taxe foncière','provision_taxe_fonciere',eur],['Total HT','total_ht',eur],['TVA','tva',eur],['Total TTC','total_ttc',eur],['Date','date_facture',txt],['N°','numero',txt]]
+  };
+  const cat = d.cat || 'autre';
+  const lignes = (map[cat]||[]).map(([lab,key,fmt])=>`<tr><td style="color:var(--text2);padding:5px 10px 5px 0;">${lab}</td><td style="font-weight:600;padding:5px 0;">${fmt(e[key])}</td></tr>`).join('');
+  let body = '';
+  if(!d.extrait){
+    body = `<div class="alert a-w"><span>⚠</span><div>Ce document n'a pas encore été lu par l'IA. Clique « 🔄 Relire » dans la liste pour lancer la lecture.</div></div>`;
+  } else {
+    body = `<table style="width:100%;border-collapse:collapse;font-size:13px;">${lignes||'<tr><td>Aucune donnée structurée.</td></tr>'}</table>`;
+  }
+  // Lien Dropbox discret en bas (au cas où, mais on n'ouvre pas par défaut)
+  const dbx = d.url ? `<div style="margin-top:14px;text-align:right;"><a href="${d.url}" target="_blank" rel="noopener" style="font-size:11px;color:var(--text3);text-decoration:underline;">Ouvrir le PDF d'origine dans Dropbox</a></div>` : '';
+  document.getElementById('doclire-titre').textContent = '👁 '+(d.titre||d.nom||'Document')+' — '+(BAT_CAT_LABEL[cat]||cat);
+  document.getElementById('doclire-body').innerHTML = body + dbx;
+  document.getElementById('modal-doclire').style.display='flex';
+}
+function closeDocLire(){ document.getElementById('modal-doclire').style.display='none'; }
 
 // Supprime un document : retire l'entrée de l'app ET le fichier dans Dropbox.
 async function batDocDelete(globalIdx){
