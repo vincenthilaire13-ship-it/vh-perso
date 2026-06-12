@@ -232,7 +232,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:14
 <div id="tab-dashboard" class="panel active">
   <div style="display:flex;justify-content:flex-end;margin-bottom:10px;">
     <span id="maj-badge" style="display:inline-flex;align-items:center;gap:6px;background:var(--success-l);color:var(--success);font-size:11px;font-weight:600;font-family:var(--mono);padding:4px 11px;border-radius:20px;border:1px solid rgba(22,101,52,0.2);">
-      <span style="font-size:9px;">●</span> Mis à jour le vendredi 12 juin 2026 à 21h43
+      <span style="font-size:9px;">●</span> Mis à jour le vendredi 12 juin 2026 à 21h49
     </span>
   </div>
   <!-- Optimisation panel toujours visible -->
@@ -1448,20 +1448,44 @@ function renderAssur(b){
 
 // ===== PRET BANCAIRE (liste) =====
 function renderPret(b) {
-  const rows = (b.prets||[]).map((p,i)=>`
-    <tr><td><strong>${p.banque||'—'}</strong></td><td class="r">${eurB(p.capital)}</td><td class="r">${eurB(p.mensualite)}</td><td class="r">${p.taux!=null?p.taux+'%':'—'}</td><td class="r">${p.fin||'—'}</td><td class="r">${eurB(p.crd)}</td><td class="r"><span style="cursor:pointer;color:var(--danger);" onclick="delPret(${i})">×</span></td></tr>`).join('');
+  const cards = (b.prets||[]).map((p,i)=>{
+    const lignes = [
+      ['Banque', p.banque||'—'],
+      ['Capital emprunté', eurB(p.capital)],
+      ['Mensualité', p.mensualite!=null?eurB(p.mensualite)+' /mois':'—'],
+      ['Taux', p.taux!=null?p.taux+' %':'—'],
+      ['Durée', p.duree_mois!=null?p.duree_mois+' mois':'—'],
+      ['Début', p.debut||'—'],
+      ['Fin', p.fin||'—'],
+      ['Capital restant dû', eurB(p.crd)],
+      ['Assurance', p.assurance!=null?eurB(p.assurance)+' /mois':'—'],
+      ['Garantie', p.garantie||'—'],
+      ['N° prêt', p.numero||'—']
+    ];
+    const cells = lignes.map(([k,val])=>`<div style="min-width:140px;"><div style="font-size:11px;color:var(--text3);">${k}</div><div style="font-weight:600;">${val}</div></div>`).join('');
+    return `<div class="card" style="margin-bottom:10px;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+        <div style="font-weight:700;font-size:15px;">🏦 ${p.banque||'Prêt'} ${p.capital!=null?'· '+eurB(p.capital):''}</div>
+        <span style="cursor:pointer;color:var(--danger);" onclick="delPret(${i})" title="Supprimer">×</span>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:16px;margin-top:10px;">${cells}</div>
+    </div>`;
+  }).join('');
   document.getElementById('bat-sub-pret').innerHTML = batDocZone(b,'pret') + `
+  ${cards||'<div class="card" style="text-align:center;color:var(--text3);padding:14px;">Aucun prêt enregistré. Dépose le tableau d\'amortissement ou l\'offre de prêt ci-dessus : la banque, le capital, la mensualité, le taux, la durée et le capital restant dû seront lus automatiquement.</div>'}
   <div class="card">
-    <div class="card-title">🏦 Prêts bancaires</div>
-    <table class="tbl"><thead><tr><th>Banque</th><th class="r">Capital</th><th class="r">Mens.</th><th class="r">Taux</th><th class="r">Fin</th><th class="r">CRD</th><th></th></tr></thead>
-    <tbody>${rows||'<tr><td colspan="7" style="text-align:center;color:var(--text3);padding:12px;">Aucun prêt enregistré.</td></tr>'}</tbody></table>
-    <div style="display:flex;flex-wrap:wrap;gap:12px;margin-top:12px;border-top:1px dashed var(--border);padding-top:12px;">
+    <div class="card-title">+ Ajouter / corriger un prêt manuellement</div>
+    <div style="display:flex;flex-wrap:wrap;gap:12px;">
       ${field('Banque','p-banque','','text')}
       ${field('Capital emprunté (€)','p-capital','','number')}
       ${field('Mensualité (€)','p-mens','','number')}
       ${field('Taux (%)','p-taux','','number')}
-      ${field('Durée / fin','p-fin','','text','ex : 180 mois ou 2034')}
+      ${field('Durée (mois)','p-duree','','number')}
+      ${field('Date de début','p-debut','','text','ex : 12/06/2019')}
+      ${field('Date de fin','p-fin','','text','ex : 12/06/2034')}
       ${field('Capital restant dû (€)','p-crd','','number')}
+      ${field('Assurance (€/mois)','p-assur','','number')}
+      ${field('Garantie','p-garantie','','text','hypothèque / caution…')}
     </div>
     <button class="btn btn-p" style="margin-top:10px;" onclick="addPret()">+ Ajouter ce prêt</button>
   </div>`;
@@ -1470,7 +1494,11 @@ async function addPret() {
   const b = batiments.find(x=>x.id===currentBat); if(!b) return;
   const v=id=>document.getElementById(id).value;
   if(!v('p-banque') && !v('p-capital')) { alert('Renseigne au moins la banque ou le capital.'); return; }
-  b.prets.push({ banque:v('p-banque'), capital:numOrNull(v('p-capital')), mensualite:numOrNull(v('p-mens')), taux:numOrNull(v('p-taux')), fin:v('p-fin'), crd:numOrNull(v('p-crd')) });
+  b.prets.push({
+    banque:v('p-banque'), capital:numOrNull(v('p-capital')), mensualite:numOrNull(v('p-mens')),
+    taux:numOrNull(v('p-taux')), duree_mois:numOrNull(v('p-duree')), debut:v('p-debut'),
+    fin:v('p-fin'), crd:numOrNull(v('p-crd')), assurance:numOrNull(v('p-assur')), garantie:v('p-garantie')
+  });
   await saveBatToDb(b); renderPret(b); recomputeBat();
 }
 async function delPret(i) {
@@ -1527,23 +1555,49 @@ function renderFactu(b) {
     return (y?parseInt(y)*100:0) + mo;
   };
   const loyersIdx = (b.loyers||[]).map((f,i)=>({f,i})).sort((a,c)=>factuKey(c.f)-factuKey(a.f));
-  const rows = loyersIdx.map(({f,i})=>`
-    <tr class="${f.paye?'ok':''}"><td>${f.periode||'—'}</td><td class="r">${eurB(f.montant)}</td><td class="r">${f.date||f.date_emission||'—'}</td><td class="r">${f.paye?'<span class="tag tag-g">Payé</span>':'<span class="tag tag-w">En attente</span>'}</td><td class="r"><span style="cursor:pointer;color:var(--accent);" onclick="togFactu(${i})">↻</span> <span style="cursor:pointer;color:var(--danger);" onclick="delFactu(${i})">×</span></td></tr>`).join('');
-  const total = (b.loyers||[]).reduce((s,f)=>s+(f.montant||0),0);
-  const encaisse = (b.loyers||[]).filter(f=>f.paye).reduce((s,f)=>s+(f.montant||0),0);
+  const rows = loyersIdx.map(({f,i})=>{
+    const loyer = f.loyer_hc!=null?f.loyer_hc:(f.hc!=null?f.hc:f.montant);
+    const charges = f.provision_charges!=null?f.provision_charges:(f.charges!=null?f.charges:null);
+    const taxe = f.provision_taxe!=null?f.provision_taxe:null;
+    const ttc = f.total_ttc!=null?f.total_ttc:null;
+    return `<tr class="${f.paye?'ok':''}">
+      <td>${f.periode||'—'}${f.numero?`<div style="font-size:10px;color:var(--text3);">N° ${f.numero}</div>`:''}</td>
+      <td class="r">${eurB(loyer)}</td>
+      <td class="r">${charges!=null?eurB(charges):'—'}</td>
+      <td class="r">${taxe!=null?eurB(taxe):'—'}</td>
+      <td class="r" style="font-weight:600;">${ttc!=null?eurB(ttc):eurB(f.montant)}</td>
+      <td class="r">${f.paye?'<span class="tag tag-g">Payé</span>':'<span class="tag tag-w">En attente</span>'}</td>
+      <td class="r"><span style="cursor:pointer;color:var(--accent);" onclick="togFactu(${i})" title="Marquer payé/en attente">↻</span> <span style="cursor:pointer;color:var(--danger);" onclick="delFactu(${i})">×</span></td>
+    </tr>`;
+  }).join('');
+  // Totaux décomposés
+  const T = (b.loyers||[]).reduce((a,f)=>{
+    a.loyer += (f.loyer_hc!=null?f.loyer_hc:(f.hc!=null?f.hc:(f.montant||0)))||0;
+    a.charges += (f.provision_charges!=null?f.provision_charges:(f.charges||0))||0;
+    a.taxe += (f.provision_taxe||0)||0;
+    a.ttc += (f.total_ttc!=null?f.total_ttc:(f.montant||0))||0;
+    if(f.paye) a.encaisse += (f.total_ttc!=null?f.total_ttc:(f.montant||0))||0;
+    return a;
+  }, {loyer:0,charges:0,taxe:0,ttc:0,encaisse:0});
   document.getElementById('bat-sub-factu').innerHTML = batDocZone(b,'factu') + `
   <div class="card">
     <div class="card-title">🧾 Facturation des loyers au locataire</div>
-    <div class="g2" style="margin-bottom:10px;">
-      <div class="kpi"><div class="kl">Total facturé</div><div class="kv">${eurB(total)}</div></div>
-      <div class="kpi suc"><div class="kl">Encaissé</div><div class="kv">${eurB(encaisse)}</div><div class="ks">Reste ${eurB(total-encaisse)}</div></div>
+    <div class="alert a-b" style="margin-bottom:10px;"><span>💡</span><div>Chaque facture est décomposée : <strong>loyer</strong> (ce qui te revient), <strong>provision charges</strong> (syndic/parties communes, reversée), <strong>provision taxe foncière</strong> (refacturée, reversée). Seul le loyer est ton revenu réel ; le reste transite par toi.</div></div>
+    <div class="g4" style="margin-bottom:10px;">
+      <div class="kpi suc"><div class="kl">Loyer (ton revenu)</div><div class="kv">${eurB(T.loyer)}</div></div>
+      <div class="kpi"><div class="kl">Provision charges</div><div class="kv">${eurB(T.charges)}</div><div class="ks">reversée</div></div>
+      <div class="kpi"><div class="kl">Provision taxe F.</div><div class="kv">${eurB(T.taxe)}</div><div class="ks">refacturée</div></div>
+      <div class="kpi acc"><div class="kl">Encaissé TTC</div><div class="kv">${eurB(T.encaisse)}</div><div class="ks">sur ${eurB(T.ttc)}</div></div>
     </div>
-    <table class="tbl"><thead><tr><th>Période</th><th class="r">Montant</th><th class="r">Émise le</th><th class="r">Statut</th><th></th></tr></thead>
-    <tbody>${rows||'<tr><td colspan="5" style="text-align:center;color:var(--text3);padding:12px;">Aucune quittance.</td></tr>'}</tbody></table>
+    <table class="tbl"><thead><tr><th>Période</th><th class="r">Loyer</th><th class="r">Charges</th><th class="r">Taxe F.</th><th class="r">Total TTC</th><th class="r">Statut</th><th></th></tr></thead>
+    <tbody>${rows||'<tr><td colspan="7" style="text-align:center;color:var(--text3);padding:12px;">Aucune quittance. Dépose les factures de loyer ci-dessus, elles seront décomposées automatiquement.</td></tr>'}</tbody></table>
     <div style="display:flex;flex-wrap:wrap;gap:12px;margin-top:12px;border-top:1px dashed var(--border);padding-top:12px;">
-      ${field('Période','f-periode','','text','ex : Janvier 2025 ou T1 2025')}
-      ${field('Montant (€)','f-montant','','number')}
-      ${field('Date d\'émission','f-date','','text','ex : 01/01/2025')}
+      ${field('Période','f-periode','','text','ex : Janvier 2026')}
+      ${field('Loyer HC (€)','f-loyer','','number')}
+      ${field('Charges (€)','f-charges','','number')}
+      ${field('Taxe foncière (€)','f-taxe','','number')}
+      ${field('Total TTC (€)','f-ttc','','number')}
+      ${field('Date','f-date','','text','ex : 01/01/2026')}
     </div>
     <button class="btn btn-p" style="margin-top:10px;" onclick="addFactu()">+ Ajouter une quittance</button>
   </div>`;
@@ -1551,8 +1605,13 @@ function renderFactu(b) {
 async function addFactu() {
   const b = batiments.find(x=>x.id===currentBat); if(!b) return;
   const v=id=>document.getElementById(id).value;
-  if(!v('f-periode') && !v('f-montant')) { alert('Renseigne au moins la période ou le montant.'); return; }
-  b.loyers.push({ periode:v('f-periode'), montant:numOrNull(v('f-montant')), date_emission:v('f-date'), paye:false });
+  if(!v('f-periode') && !v('f-loyer') && !v('f-ttc')) { alert('Renseigne au moins la période ou un montant.'); return; }
+  const loyer = numOrNull(v('f-loyer'));
+  b.loyers.push({
+    periode:v('f-periode'), loyer_hc:loyer, provision_charges:numOrNull(v('f-charges')),
+    provision_taxe:numOrNull(v('f-taxe')), total_ttc:numOrNull(v('f-ttc')),
+    montant:loyer, date:v('f-date'), paye:false
+  });
   await saveBatToDb(b); renderFactu(b);
 }
 async function togFactu(i) {
@@ -2012,16 +2071,23 @@ JSON attendu :
   "titre": "intitulé court (ex : Syndic T1 2025)" }`;
   if(cat==='factu') return head + `
 Type de document : QUITTANCE ou FACTURE de loyer émise au locataire.
+Lis le DÉTAIL ligne par ligne. Une facture de loyer commercial contient typiquement plusieurs lignes distinctes qu'il faut séparer : le loyer de base, une provision pour charges (syndic, parties communes), une provision pour taxe foncière refacturée, puis TVA et total TTC. NE confonds PAS le loyer avec le total : le "loyer" est UNIQUEMENT la ligne « Loyer », pas la somme.
 JSON attendu :
 { "type_doc":"facture_loyer",
-  "locataire": "locataire",
-  "periode": "mois/période concernée (ex : Janvier 2025)",
-  "montant_loyer_hc": nombre,
-  "montant_charges": nombre,
-  "montant_total": nombre,
+  "locataire": "locataire (preneur)",
+  "bailleur": "bailleur (émetteur)",
+  "periode": "mois/période concernée (ex : Janvier 2026)",
+  "loyer_hc": nombre (ligne « Loyer » seule, hors charges hors taxes),
+  "provision_charges": nombre (ligne « Provision pour charges » HT, sinon null),
+  "provision_taxe_fonciere": nombre (ligne « Provision pour taxe foncière » HT, sinon null),
+  "autres_lignes": [{"libelle":"intitulé exact","montant":nombre}] (toute autre ligne HT non couverte ci-dessus, sinon []),
+  "total_ht": nombre,
+  "tva": nombre,
+  "taux_tva": nombre (ex : 20),
+  "total_ttc": nombre,
   "date_facture": "JJ/MM/AAAA",
   "numero": "numéro de facture/quittance",
-  "titre": "intitulé court (ex : Loyer janvier 2025)" }`;
+  "titre": "intitulé court (ex : Loyer janvier 2026)" }`;
   if(cat==='caution') return head + `
 Type de document : ACTE DE CAUTIONNEMENT (garantie d'un bail commercial).
 JSON attendu :
@@ -2265,9 +2331,19 @@ function batApplyExtract(b, cat, d){
     b.prets = b.prets || [];
     const exists = b.prets.some(p => (p.banque||'')===(d.banque||'') && Number(p.capital)===Number(d.capital) && d.banque);
     if(!exists){
-      b.prets.push({ banque:d.banque||'', capital:(d.capital!=null?d.capital:null), mensualite:(d.mensualite!=null?d.mensualite:null),
-        taux:(d.taux!=null?d.taux:null), fin:(d.date_fin||(d.duree_mois?d.duree_mois+' mois':'')||''), crd:(d.crd!=null?d.crd:null),
-        numero:d.numero_pret||'', assurance:(d.assurance_mensuelle!=null?d.assurance_mensuelle:null) });
+      b.prets.push({
+        banque: d.banque||'',
+        capital: (d.capital!=null?d.capital:null),
+        mensualite: (d.mensualite!=null?d.mensualite:null),
+        taux: (d.taux!=null?d.taux:null),
+        duree_mois: (d.duree_mois!=null?d.duree_mois:null),
+        debut: d.date_debut||'',
+        fin: d.date_fin||'',
+        crd: (d.crd!=null?d.crd:null),
+        numero: d.numero_pret||'',
+        assurance: (d.assurance_mensuelle!=null?d.assurance_mensuelle:null),
+        garantie: d.garantie||''
+      });
     }
   } else if(cat==='taxe'){
     b.taxes = b.taxes || [];
@@ -2287,9 +2363,27 @@ function batApplyExtract(b, cat, d){
     }
   } else if(cat==='factu'){
     b.loyers = b.loyers || [];
-    b.loyers.push({ periode:d.periode||'', montant:(d.montant_total!=null?d.montant_total:(d.montant_loyer_hc!=null?d.montant_loyer_hc:null)),
-      hc:(d.montant_loyer_hc!=null?d.montant_loyer_hc:null), charges:(d.montant_charges!=null?d.montant_charges:null), date:d.date_facture||'',
-      numero:d.numero||'', locataire:d.locataire||'' });
+    const per = d.periode||'';
+    // anti-doublon : même période + même total → on ne ré-ajoute pas
+    const exists = b.loyers.some(f => (f.periode||'')===per && Number(f.total_ttc||f.montant)===Number(d.total_ttc!=null?d.total_ttc:d.total_ht));
+    if(!exists){
+      b.loyers.push({
+        periode: per,
+        loyer_hc: (d.loyer_hc!=null?d.loyer_hc:null),
+        provision_charges: (d.provision_charges!=null?d.provision_charges:null),
+        provision_taxe: (d.provision_taxe_fonciere!=null?d.provision_taxe_fonciere:null),
+        autres: Array.isArray(d.autres_lignes)?d.autres_lignes:[],
+        total_ht: (d.total_ht!=null?d.total_ht:null),
+        tva: (d.tva!=null?d.tva:null),
+        total_ttc: (d.total_ttc!=null?d.total_ttc:null),
+        // "montant" = le LOYER réel pour toi (ce qui te revient), pas le total
+        montant: (d.loyer_hc!=null?d.loyer_hc:(d.total_ht!=null?d.total_ht:null)),
+        date: d.date_facture||'',
+        numero: d.numero||'',
+        locataire: d.locataire||'',
+        paye: false
+      });
+    }
   }
   // caution / edl / diag / assur : pas de champs dédiés — les données extraites restent
   // dans le document lui-même (b.docs[].extrait) et sont affichées par batDocZone.
