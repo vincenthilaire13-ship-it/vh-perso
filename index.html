@@ -232,7 +232,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:14
 <div id="tab-dashboard" class="panel active">
   <div style="display:flex;justify-content:flex-end;margin-bottom:10px;">
     <span id="maj-badge" style="display:inline-flex;align-items:center;gap:6px;background:var(--success-l);color:var(--success);font-size:11px;font-weight:600;font-family:var(--mono);padding:4px 11px;border-radius:20px;border:1px solid rgba(22,101,52,0.2);">
-      <span style="font-size:9px;">●</span> Mis à jour le vendredi 12 juin 2026 à 15h58
+      <span style="font-size:9px;">●</span> Mis à jour le vendredi 12 juin 2026 à 16h26
     </span>
   </div>
   <!-- Optimisation panel toujours visible -->
@@ -853,6 +853,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:14
 <!-- COUT VINCENT (dirigeant) -->
 <div id="tab-cout-vincent" class="panel">
   <div class="alert a-b"><span>👤</span><div><strong>Combien coûte Vincent Hilaire au groupe.</strong> Cette page rassemble, société par société, tout ce que le dirigeant coûte : rémunération de gérance, charges sociales / TNS, véhicules, assurances auto, carburant, restaurants & réceptions, déplacements… Les chiffres sont extraits automatiquement de chaque bilan importé (dernier exercice connu de chaque société).</div></div>
+  <div id="cv-controle"></div>
   <div class="g4" id="cv-kpis"></div>
   <div id="cv-body"></div>
 </div>
@@ -3133,7 +3134,7 @@ async function pdfToImages(file, maxPages, opts) {
 function imgsBytes(imgs){ return imgs.reduce((s,b)=>s + Math.floor((b.length*3)/4), 0); }
 
 async function extraireBilanIA(box, file, soc, year, rowEl, ctx) {
-  const zone = box.querySelector('.si-ia');
+  const zone = box ? box.querySelector('.si-ia') : null;
   const note = document.createElement('div');
   note.style.cssText='font-size:12px;color:var(--accent);margin-top:6px;padding:8px 10px;background:var(--accent-l);border-radius:8px;';
   note.textContent='🤖 Lecture automatique du bilan en cours… (cela peut prendre 10-20 secondes)';
@@ -3172,13 +3173,15 @@ COÛT DU DIRIGEANT — c'est une priorité. Une liasse contient en général un 
 - "remuneration_dirigeant" : rémunération brute du gérant (641 rémunération du personnel si gérant salarié, 6411, ou 644 « rémunération du travail de l'exploitant » / rémunérations de gérance). Inclut les rémunérations exceptionnelles de gérance.
 - "charges_sociales_dirigeant" : cotisations sociales personnelles du dirigeant (646 « cotisations sociales personnelles de l'exploitant », TNS/URSSAF/RSI, charges sociales sur rémunération de gérance, 6411 charges).
 - "vehicule_dirigeant" : tout le coût du/des véhicule(s) (dotation aux amortissements du véhicule, crédit-bail / leasing / LLD 612 ou 6132, locations 6135, entretien et réparations 6155, petit équipement auto). Additionne ces lignes.
-- "assurance_vehicule" : primes d'assurance automobile (616, 6163).
-- "carburant" : carburants / essence / gazole (6061, 6068, « carburants »).
-- "restaurants_receptions" : frais de restaurant, repas, réceptions, missions, traiteur (6256 missions, 6257 réceptions, restaurants).
-- "deplacements_voyages" : voyages et déplacements, train, avion, hôtels, péages, parkings (6251, 6252, 6255).
-- "autres_avantages_dirigeant" : autres frais personnels du dirigeant : téléphone/mobile (626), cotisations facultatives Madelin / retraite / prévoyance du dirigeant payées par la société, cadeaux, frais de représentation, cotisations clubs.
+- "vehicule_dirigeant" : tout le coût du/des véhicule(s) du dirigeant. Additionne TOUTES ces lignes si présentes : dotation aux amortissements du véhicule, crédit-bail / leasing / LLD / location longue durée (libellés du type « Credit bail vehicule », « Loc. vehicule », « Leasing auto », « LLD »), locations de véhicule (6135), entretien et réparations du véhicule (« Entretien vehicule », 6155), petit équipement auto. Sur les bilans de cabinet, le crédit-bail véhicule apparaît souvent dans « Autres achats et charges externes » sous un libellé explicite (ex. « Credit bail vehicule range ») — INCLUS-le.
+- "assurance_vehicule" : primes d'assurance automobile spécifiques au véhicule (616, 6163, libellés « Assurance vehicule », « Assurance auto »). Si le bilan ne présente qu'une assurance globale non ventilée, mets null (ne devine pas un montant).
+- "carburant" : carburants / essence / gazole du véhicule du dirigeant (6061, 6068, libellés « Carburant », « Fourniture carburant », « Essence », « Gazole »). ATTENTION : dans une société de restauration, une ligne « carburant » peut concerner les véhicules de livraison et pas seulement le dirigeant. Si tu ne peux pas distinguer, mets quand même le montant lu dans "carburant" MAIS ajoute une note dans "cout_dirigeant_detail" du type {"libelle":"Carburant (peut inclure livraison)","montant":...} pour signaler le doute. Ne mets pas null si la ligne existe.
+- "restaurants_receptions" : frais de restaurant, repas, réceptions, missions, traiteur (6256 missions, 6257 réceptions, « Receptions », « Restaurant », « Repas »).
+- "deplacements_voyages" : voyages et déplacements, train, avion, hôtels, péages, parkings (6251 « Voyages et deplacements », 6252, 6255, « Frais deplt »).
+- "autres_avantages_dirigeant" : autres frais personnels du dirigeant : téléphone/mobile (626), cotisations facultatives Madelin / retraite / prévoyance / mutuelle du dirigeant payées par la société (libellés « Ass prevoy tns », « Ass complt muta sante », « ret generali », « Organic ret », « Madelin »), cadeaux, frais de représentation, cotisations clubs. Additionne ces lignes TNS de prévoyance/retraite/mutuelle personnelles si elles ne sont pas déjà comptées dans charges_sociales_dirigeant.
 - "cout_dirigeant_total" : la SOMME de tous les postes ci-dessus si tu peux la calculer (sinon null, l'app la recalculera).
 - "cout_dirigeant_detail" : liste libre de TOUTE autre ligne du compte de résultat détaillé qui te semble être un frais du gérant et qui n'entre dans aucune case ci-dessus, sous la forme [{"libelle":"intitulé exact lu","montant":nombre}]. Sers-t'en pour ne RIEN oublier.
+IMPORTANT pour le coût du dirigeant : un poste à 0 ou null doit signifier que la ligne est VRAIMENT absente du bilan, pas que tu ne l'as pas cherchée. Parcours le compte de résultat détaillé (souvent intitulé « Détail du Compte de Résultat », pages en milieu/fin de liasse) LIGNE PAR LIGNE avant de conclure qu'un poste est vide.
 Ne mets une valeur que si tu la vois réellement dans le document ; sinon null. N'invente pas, mais sois EXHAUSTIF : parcours tout le compte de résultat détaillé.
 
 Objet JSON attendu :
@@ -3318,7 +3321,7 @@ Règle pour comptes_courants_detail : "actif" = la société liée DOIT de l'arg
         }
       } catch(e){}
       // Rafraîchit la liste des fichiers + la frise (la ligne passera en « Exercice <realYear> »)
-      socImpRender(box);
+      if(box) socImpRender(box);
     }
     note.style.color='var(--success)';
     note.innerHTML = '✓ Bilan <strong>'+realYear+'</strong> lu automatiquement'+(realYear!==parseInt(year)?' (rangé en '+realYear+' d\'après la date du bilan)':'')+' — résultat net : <strong>'+(fin.resultat_net!=null?Math.round(fin.resultat_net).toLocaleString('fr-FR')+'€':'n.c.')+'</strong>, capitaux propres : <strong>'+(fin.capitaux_propres!=null?Math.round(fin.capitaux_propres).toLocaleString('fr-FR')+'€':'n.c.')+'</strong>';
@@ -3354,7 +3357,7 @@ Règle pour comptes_courants_detail : "actif" = la société liée DOIT de l'arg
           if(newPath && newPath!==oldPath){ upd.dropbox_path = newPath; if(newUrl) upd.url = newUrl; }
           try { await sb.from('societe_docs').update(upd).eq('id', ctx.docId); } catch(er){}
         }
-        socImpRender(box);
+        if(box) socImpRender(box);
       } catch(er){}
     }
     note.style.color='var(--warn)';
@@ -3471,6 +3474,92 @@ function coutDirigeantTotal(d){
 // S'appuie sur le dernier exercice connu de chaque société (SOC_FIN_CACHE), rempli par
 // renderSocFinances au chargement. Si le cache n'est pas prêt, on lit directement la base.
 const CV_SOCS = ['vh','ba','bka','bksj','fvh','sci'];
+
+// Panneau de contrôle des lectures, affiché en haut de la page Coût Vincent.
+// Pour chaque société : combien de postes du coût dirigeant ont été lus, lesquels
+// manquent, et un bouton « Relire » qui relance l'extraction IA du dernier bilan PDF.
+// « last » = dernier exercice connu par société (peut être incomplet).
+async function renderCvControle(last){
+  const zone = document.getElementById('cv-controle');
+  if(!zone) return;
+  // Récupère, par société, le dernier bilan PDF indexé (pour pouvoir le relire)
+  let docsBySoc = {};
+  try {
+    const {data} = await sb.from('societe_docs').select('id,societe,exercice,doctype,dropbox_path,type,nom').order('exercice',{ascending:false});
+    (data||[]).forEach(d=>{
+      const isBilanPdf = /bilan|liasse|résultat|resultat/i.test(d.doctype||'') && /pdf/i.test(d.type||(d.nom||'').split('.').pop()||'');
+      if(!isBilanPdf || !d.dropbox_path) return;
+      if(!docsBySoc[d.societe]) docsBySoc[d.societe] = d; // le plus récent (déjà trié desc)
+    });
+  } catch(e){}
+  let rows = '';
+  CV_SOCS.forEach(soc=>{
+    const d = last[soc] ? (last[soc].donnees||{}) : null;
+    const doc = docsBySoc[soc];
+    // Compte les postes lus / manquants
+    let lus = 0; const manquants = [];
+    DIR_POSTES.forEach(([k,lab])=>{
+      const v = d ? d[k] : null;
+      if(v!=null && !isNaN(Number(v)) && Number(v)!==0) lus++;
+      else manquants.push(lab);
+    });
+    const total = DIR_POSTES.length;
+    let etat, col;
+    if(!d){ etat = 'aucun bilan lu'; col = 'var(--text3)'; }
+    else if(lus===total){ etat = 'complet'; col = 'var(--success)'; }
+    else if(lus===0){ etat = 'vide'; col = 'var(--danger)'; }
+    else { etat = lus+'/'+total+' postes lus'; col = 'var(--warn)'; }
+    const exoLabel = last[soc] ? (' · exercice '+last[soc].exercice) : '';
+    const relireBtn = doc
+      ? `<button class="btn" style="font-size:11px;padding:4px 10px;" onclick="cvRelireBilan('${soc}',this)">🔄 Relire le bilan</button>`
+      : `<button class="btn" style="font-size:11px;padding:4px 10px;" onclick="sw('soc-${soc}',null)">Ouvrir la société →</button>`;
+    const manqTxt = (d && manquants.length) ? `<div style="font-size:11px;color:var(--text3);margin-top:3px;">Manque : ${manquants.join(', ')}</div>` : '';
+    rows += `<tr>
+      <td><strong>${IS_SOC_LABEL[soc]||soc}</strong><span style="font-size:11px;color:var(--text3);">${exoLabel}</span>${manqTxt}</td>
+      <td><span style="color:${col};font-weight:600;font-size:12px;">${etat}</span></td>
+      <td class="r">${relireBtn}</td>
+    </tr>`;
+  });
+  zone.innerHTML = `<div class="card" style="margin-bottom:14px;">
+    <div class="card-title">🔎 Contrôle des lectures — relancer une extraction si un poste manque</div>
+    <div class="alert a-b" style="margin-bottom:10px;"><span>💡</span><div>Pour chaque société, l'état des postes du coût dirigeant lus dans le dernier bilan. Si un poste manque (carburant, assurance…), clique « Relire le bilan » : l'app retélécharge le bilan depuis Dropbox et relance la lecture automatique. Un poste qui reste vide après relecture = l'info n'existe pas dans ce bilan.</div></div>
+    <table class="tbl"><thead><tr><th>Société</th><th>État de lecture</th><th class="r">Action</th></tr></thead><tbody>${rows}</tbody></table>
+  </div>`;
+}
+
+// Relit le dernier bilan PDF d'une société DEPUIS la page Coût Vincent (sans passer par
+// l'onglet société). Retélécharge le PDF, relance extraireBilanIA, puis rafraîchit la page.
+async function cvRelireBilan(soc, btn){
+  const old = btn.textContent; btn.textContent='Lecture en cours…'; btn.disabled=true;
+  try {
+    // Retrouve le dernier bilan PDF de cette société
+    const {data} = await sb.from('societe_docs').select('id,exercice,doctype,dropbox_path,type,nom').eq('societe',soc).order('exercice',{ascending:false});
+    const doc = (data||[]).find(d => /bilan|liasse|résultat|resultat/i.test(d.doctype||'') && /pdf/i.test(d.type||(d.nom||'').split('.').pop()||'') && d.dropbox_path);
+    if(!doc){ alert('Aucun bilan PDF trouvé pour '+(IS_SOC_LABEL[soc]||soc)+'. Ouvre la société et dépose le bilan.'); btn.textContent=old; btn.disabled=false; return; }
+    const tok = await dbxToken();
+    const dlr = await fetch('https://content.dropboxapi.com/2/files/download', {
+      method:'POST', headers:{'Authorization':'Bearer '+tok,'Dropbox-API-Arg':JSON.stringify({path:doc.dropbox_path})}
+    });
+    if(!dlr.ok) throw new Error('Téléchargement Dropbox impossible');
+    const blob = await dlr.blob();
+    const fname = doc.dropbox_path.split('/').pop() || 'bilan.pdf';
+    const file = new File([blob], fname, {type:'application/pdf'});
+    const folder = IS_SOC_FOLDER[soc] || soc;
+    const ext = (fname.split('.').pop()||'pdf').toLowerCase();
+    const dateStr = new Date().toISOString().slice(0,10);
+    // box=null : extraireBilanIA n'a pas besoin du DOM .socimp ici (il gère le cas null)
+    await extraireBilanIA(null, file, soc, String(doc.exercice), null, {docId:doc.id, dropbox_path:doc.dropbox_path, folder, doctype:doc.doctype||'Bilan', dateStr, ext});
+    delete SOC_FIN_CACHE[soc];
+    // Rafraîchit la fiche société (si visible), le dashboard et la page Coût Vincent
+    try { await renderSocFinances(soc); } catch(e){}
+    try { renderDashboardGroupe(); } catch(e){}
+    await renderCoutVincent();
+  } catch(e){
+    alert('Relecture impossible : '+((e&&e.message)||'')+'.');
+    btn.textContent=old; btn.disabled=false;
+  }
+}
+
 async function renderCoutVincent() {
   const kpiZone = document.getElementById('cv-kpis');
   const body = document.getElementById('cv-body');
@@ -3486,10 +3575,13 @@ async function renderCoutVincent() {
     }
     if(rows && rows.length){ last[soc] = rows[0]; allRows[soc] = rows; }
   }
+  // Panneau de contrôle des lectures (toujours affiché, même si rien n'est lu) :
+  // pour chaque société, état des postes du coût dirigeant + bouton « Relire » sur place.
+  try { await renderCvControle(last); } catch(e){}
   const socsAvecData = CV_SOCS.filter(s=>last[s]);
   if(!socsAvecData.length){
     if(kpiZone) kpiZone.innerHTML = '';
-    body.innerHTML = '<div class="alert a-b"><span>🔎</span><div>Aucun bilan exploité pour le moment. Dépose les bilans dans chaque société (et clique « 🔄 Relire » sur les bilans déjà importés) : les coûts du dirigeant apparaîtront ici dès qu\'ils auront été lus.</div></div>';
+    body.innerHTML = '<div class="alert a-b"><span>🔎</span><div>Aucun bilan exploité pour le moment. Dépose les bilans dans chaque société : les coûts du dirigeant apparaîtront ici dès qu\'ils auront été lus. Tu peux aussi relancer une lecture depuis le panneau de contrôle ci-dessus.</div></div>';
     return;
   }
   // Totaux par poste (somme sur toutes les sociétés) + total par société
@@ -3570,7 +3662,7 @@ async function renderCoutVincent() {
   // Chaque cellule = coût du dirigeant pour cette société cet exercice-là.
   const annees = new Set();
   Object.keys(allRows).forEach(soc => (allRows[soc]||[]).forEach(r => { const y=parseInt(r.exercice); if(!isNaN(y)) annees.add(y); }));
-  const anneesTri = Array.from(annees).sort((a,b)=>a-b); // croissant : 2022, 2023, 2024…
+  const anneesTri = Array.from(annees).sort((a,b)=>b-a); // décroissant : 2025, 2024, 2023…
   if(anneesTri.length){
     // coutParSocAnnee[soc][annee] = total coût dirigeant
     const coutParSocAnnee = {}, totParAnnee = {}, remParAnnee = {};
@@ -3606,8 +3698,8 @@ async function renderCoutVincent() {
     // Ligne total groupe
     html += `<tr style="border-top:2px solid var(--border2);"><td style="font-weight:700;">Total groupe</td>${anneesTri.map(y=>'<td class="r" style="font-weight:700;">'+(totParAnnee[y]!=null?eurF(totParAnnee[y]):'<span style="color:var(--text3);">—</span>')+'</td>').join('')}</tr>`;
     html += `</tbody></table></div>`;
-    // Mini-récap en texte : variation d'une année à l'autre
-    const anneesAvecTotal = anneesTri.filter(y=>totParAnnee[y]!=null);
+    // Mini-récap en texte : variation entre les deux exercices les plus récents
+    const anneesAvecTotal = anneesTri.filter(y=>totParAnnee[y]!=null).slice().sort((a,b)=>a-b); // croissant pour le calcul
     if(anneesAvecTotal.length>=2){
       const p = anneesAvecTotal[anneesAvecTotal.length-2], d = anneesAvecTotal[anneesAvecTotal.length-1];
       const diff = totParAnnee[d]-totParAnnee[p];
