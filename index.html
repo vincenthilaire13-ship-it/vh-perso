@@ -231,7 +231,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:14
 <div id="tab-dashboard" class="panel active">
   <div style="display:flex;justify-content:flex-end;margin-bottom:10px;">
     <span id="maj-badge" style="display:inline-flex;align-items:center;gap:6px;background:var(--success-l);color:var(--success);font-size:11px;font-weight:600;font-family:var(--mono);padding:4px 11px;border-radius:20px;border:1px solid rgba(22,101,52,0.2);">
-      <span style="font-size:9px;">●</span> Mis à jour le vendredi 12 juin 2026 à 09h49
+      <span style="font-size:9px;">●</span> Mis à jour le vendredi 12 juin 2026 à 09h53
     </span>
   </div>
   <!-- Optimisation panel toujours visible -->
@@ -2838,7 +2838,7 @@ function socImpYears() {
   const now = new Date().getFullYear();
   let o = '';
   const top = Math.max(now+2, 2028);
-  for(let y=top; y>=2023; y--) o += `<option value="${y}"${y===now?' selected':''}>Exercice ${y}</option>`;
+  for(let y=top; y>=2023; y--) o += `<option value="${y}"${y===now-1?' selected':''}>Exercice ${y}</option>`;
   return o;
 }
 
@@ -2852,7 +2852,7 @@ function buildSocImports() {
         <div class="alert a-b" style="margin-bottom:12px;"><span>💡</span><div>Dépose ici les documents de <strong>${IS_SOC_LABEL[soc]||'cette société'}</strong> par exercice : <strong>bilan</strong> et <strong>PV d'Assemblée Générale</strong> (+ liasse, FEC…). La frise ci-dessus passe en vert quand le bilan ET le PV d'AG sont reçus pour une année. Rangés dans Dropbox « Fiscal Vincent » en <code>/${IS_SOC_FOLDER[soc]||soc}/Exercice/</code>. Envoie-les aussi dans le chat pour que je les analyse.</div></div>
         <div class="g2" style="margin-bottom:12px;">
           <div class="sim-row" style="flex-direction:column;align-items:stretch;gap:4px;">
-            <label style="width:auto;">Exercice <span style="font-weight:400;color:var(--text3);font-size:11px;">(auto-détecté pour les bilans)</span></label>
+            <label style="width:auto;">Exercice <span style="font-weight:400;color:var(--text3);font-size:11px;">(pour un bilan PDF : l'année est lue dans le document et corrigée automatiquement, même si ce menu est faux)</span></label>
             <select class="sim-in si-year" style="width:100%;font-family:var(--font);">${socImpYears()}</select>
           </div>
           <div class="sim-row" style="flex-direction:column;align-items:stretch;gap:4px;">
@@ -2915,10 +2915,11 @@ async function socImpHandle(box, files) {
       else { const st=tmp&&tmp.querySelector('.fst'); if(st){st.className='fst';st.style.color='var(--danger)';st.textContent='Échec Dropbox';} }
     } catch(e){ const st=tmp&&tmp.querySelector('.fst'); if(st){st.className='fst';st.style.color='var(--danger)';st.textContent='Erreur Dropbox';} }
     if(ok){
-      let dbErr = null;
+      let dbErr = null, docId = null;
       try {
-        const res = await sb.from('societe_docs').insert({societe:soc,exercice:parseInt(year),doctype,nom:f.name,type:ext.toUpperCase(),taille:f.size,dropbox_path,url,statut:'archive'});
+        const res = await sb.from('societe_docs').insert({societe:soc,exercice:parseInt(year),doctype,nom:f.name,type:ext.toUpperCase(),taille:f.size,dropbox_path,url,statut:'archive'}).select().single();
         if(res && res.error) dbErr = res.error.message || JSON.stringify(res.error);
+        else if(res && res.data) docId = res.data.id;
       } catch(e){ dbErr = (e&&e.message)||'exception'; }
       const st=tmp&&tmp.querySelector('.fst');
       if(dbErr){
@@ -2935,7 +2936,7 @@ async function socImpHandle(box, files) {
       // Extraction automatique des chiffres si c'est un Bilan PDF
       console.log('[IA] doctype=',doctype,'ext=',ext,'→ extraction',(/bilan/i.test(doctype) && ext==='pdf'));
       if(/bilan/i.test(doctype) && ext==='pdf'){
-        extraireBilanIA(box, f, soc, year, tmp);
+        extraireBilanIA(box, f, soc, year, tmp, {docId, dropbox_path, folder, doctype, dateStr, ext});
       }
     }
   }
@@ -2949,7 +2950,7 @@ function socImpRow(list, d) {
   row.className = 'fitem';
   const ext = (d.type||'').toUpperCase();
   const dl = d.url ? `<a href="${d.url}" target="_blank" class="btn" style="font-size:11px;padding:3px 9px;">Ouvrir</a>` : '';
-  const del = d.id ? `<button class="btn" style="font-size:11px;padding:3px 9px;" onclick="socImpDelete(this,'${d.id}','${(d.dropbox_path||'').replace(/'/g,"")}')">Suppr.</button>` : '';
+  const del = d.id ? `<button class="btn" style="font-size:11px;padding:3px 9px;" onclick="socImpDelete(this,'${d.id}','${(d.dropbox_path||'').replace(/'/g,"")}','${d.societe||''}','${d.exercice||''}','${(d.doctype||'').replace(/'/g,"")}')">Suppr.</button>` : '';
   row.innerHTML = `<div class="fext ${ext==='CSV'?'csv':''}">${ext}</div>
 <div class="finfo"><div class="fname">${d.nom}</div><div class="fmeta">${d.doctype||''} · Exercice ${d.exercice||''}</div></div>
 <div style="display:flex;gap:6px;align-items:center;">${dl}${del}<span class="fst ${d.statut==='archive'?'fst-ok':'fst-p'}">${d.statut==='archive'?'Dropbox ✓':(d.statut==='up'?'…':'')}</span></div>`;
@@ -3006,10 +3007,25 @@ async function socImpRender(box) {
 }
 
 // Suppression depuis un bloc société
-async function socImpDelete(btn, id, dropbox_path) {
+async function socImpDelete(btn, id, dropbox_path, soc, exercice, doctype) {
   if(!confirm('Supprimer ce fichier (Dropbox + index) ?')) return;
   try { if(dropbox_path){ const tok=await dbxToken(); await fetch('https://api.dropboxapi.com/2/files/delete_v2',{method:'POST',headers:{'Authorization':'Bearer '+tok,'Content-Type':'application/json'},body:JSON.stringify({path:dropbox_path})}); } } catch(e){}
   try { await sb.from('societe_docs').delete().eq('id', id); } catch(e){}
+  // Nettoyage : si on supprime un BILAN, et qu'il ne reste plus aucun bilan pour cet
+  // exercice, on retire aussi les chiffres extraits (societe_finances) pour ne pas
+  // laisser de données orphelines une fois le fichier source supprimé.
+  if(soc && exercice && /bilan/i.test(doctype||'')) {
+    try {
+      const {data:reste} = await sb.from('societe_docs').select('id,doctype').eq('societe',soc).eq('exercice',parseInt(exercice));
+      const encoreUnBilan = (reste||[]).some(r => /bilan/i.test(r.doctype||''));
+      if(!encoreUnBilan){
+        await sb.from('societe_finances').delete().eq('societe',soc).eq('exercice',parseInt(exercice));
+        const zone = document.querySelector('.fin-zone[data-soc="'+soc+'"]');
+        if(zone) zone.innerHTML = '<div class="card"><div class="card-title">Suivi par exercice</div><div style="color:var(--text3);font-size:13px;text-align:center;padding:18px;">En attente du bilan. Dépose-le ci-dessous : l\'application le lira automatiquement et remplira les chiffres ici (résultat, capitaux propres, comptes courants, dividendes…).</div></div>';
+        renderSocFinances(soc);
+      }
+    } catch(e){}
+  }
   const box = btn.closest('.socimp'); if(box) socImpRender(box);
 }
 
@@ -3125,7 +3141,7 @@ async function pdfToImages(file, maxPages) {
   return imgs;
 }
 
-async function extraireBilanIA(box, file, soc, year, rowEl) {
+async function extraireBilanIA(box, file, soc, year, rowEl, ctx) {
   const zone = box.querySelector('.si-ia');
   const note = document.createElement('div');
   note.style.cssText='font-size:12px;color:var(--accent);margin-top:6px;padding:8px 10px;background:var(--accent-l);border-radius:8px;';
@@ -3185,6 +3201,37 @@ Pour comptes_courants_detail : "actif" = la société liée DOIT de l'argent à 
         societe: soc, exercice: realYear, donnees: fin, updated_at: new Date().toISOString()
       }, { onConflict: 'societe,exercice' });
     } catch(e){}
+    // Si l'année réelle diffère du menu : on RANGE le fichier dans la bonne année
+    // (mise à jour de l'index societe_docs + déplacement physique dans Dropbox)
+    if(ctx && realYear !== parseInt(year)) {
+      try {
+        // 1) Déplacement Dropbox vers /<folder>/<realYear>/<nom avec realYear>
+        const oldPath = ctx.dropbox_path;
+        let newPath = oldPath, newUrl = null;
+        if(oldPath && ctx.folder){
+          const docClean = (ctx.doctype||'Bilan').replace(/[^a-zA-Z0-9]/g,'_');
+          const niceName = `${docClean}_${ctx.folder}_${realYear}_${ctx.dateStr}.${ctx.ext}`;
+          newPath = `/${ctx.folder}/${realYear}/${niceName}`;
+          try {
+            const tok = await dbxToken();
+            const mv = await fetch('https://api.dropboxapi.com/2/files/move_v2', {
+              method:'POST', headers:{'Authorization':'Bearer '+tok,'Content-Type':'application/json'},
+              body: JSON.stringify({from_path:oldPath, to_path:newPath, autorename:true})
+            });
+            if(mv.ok){ const meta=await mv.json(); newPath=(meta.metadata&&meta.metadata.path_lower)||newPath; newUrl=await dbxShareLink(tok,newPath); }
+            else { newPath = oldPath; } // échec déplacement : on garde l'ancien chemin
+          } catch(e){ newPath = oldPath; }
+        }
+        // 2) Mise à jour de l'index : exercice corrigé + nouveau chemin/lien
+        if(ctx.docId){
+          const upd = { exercice: realYear };
+          if(newPath && newPath!==oldPath){ upd.dropbox_path = newPath; if(newUrl) upd.url = newUrl; }
+          try { await sb.from('societe_docs').update(upd).eq('id', ctx.docId); } catch(e){}
+        }
+      } catch(e){}
+      // Rafraîchit la liste des fichiers + la frise (la ligne passera en « Exercice <realYear> »)
+      socImpRender(box);
+    }
     note.style.color='var(--success)';
     note.innerHTML = '✓ Bilan <strong>'+realYear+'</strong> lu automatiquement'+(realYear!==parseInt(year)?' (rangé en '+realYear+' d\'après la date du bilan)':'')+' — résultat net : <strong>'+(fin.resultat_net!=null?Math.round(fin.resultat_net).toLocaleString('fr-FR')+'€':'n.c.')+'</strong>, capitaux propres : <strong>'+(fin.capitaux_propres!=null?Math.round(fin.capitaux_propres).toLocaleString('fr-FR')+'€':'n.c.')+'</strong>';
     renderSocFinances(soc);
@@ -3259,7 +3306,13 @@ async function renderSocFinances(soc) {
   if(!zone) return;
   let rows = [];
   try { const {data}=await sb.from('societe_finances').select('*').eq('societe',soc).order('exercice',{ascending:false}); rows=data||[]; } catch(e){}
-  if(!rows.length){ return; } // garde le message d'attente
+  if(!rows.length){
+    // Plus aucun chiffre extrait : on remet le message d'attente (évite données orphelines)
+    if(/Chiffres extraits automatiquement/.test(zone.innerHTML)) {
+      zone.innerHTML = '<div class="card"><div class="card-title">Suivi par exercice</div><div style="color:var(--text3);font-size:13px;text-align:center;padding:18px;">En attente du bilan. Dépose-le ci-dessous : l\'application le lira automatiquement et remplira les chiffres ici (résultat, capitaux propres, comptes courants, dividendes…).</div></div>';
+    }
+    return;
+  }
   const last = rows[0];
   const d = last.donnees || {};
   // KPI principaux du dernier exercice
