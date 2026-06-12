@@ -232,7 +232,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:14
 <div id="tab-dashboard" class="panel active">
   <div style="display:flex;justify-content:flex-end;margin-bottom:10px;">
     <span id="maj-badge" style="display:inline-flex;align-items:center;gap:6px;background:var(--success-l);color:var(--success);font-size:11px;font-weight:600;font-family:var(--mono);padding:4px 11px;border-radius:20px;border:1px solid rgba(22,101,52,0.2);">
-      <span style="font-size:9px;">●</span> Mis à jour le vendredi 12 juin 2026 à 15h37
+      <span style="font-size:9px;">●</span> Mis à jour le vendredi 12 juin 2026 à 15h58
     </span>
   </div>
   <!-- Optimisation panel toujours visible -->
@@ -3153,10 +3153,18 @@ async function extraireBilanIA(box, file, soc, year, rowEl, ctx) {
 
 OÙ TROUVER CHAQUE POSTE dans une liasse française (formulaires 2050 à 2059) :
 - "ebe" (Excédent Brut d'Exploitation) : cherche-le d'abord dans le tableau des SOLDES INTERMÉDIAIRES DE GESTION (souvent fourni par l'expert-comptable, libellé « EBE » ou « Excédent brut d'exploitation »). S'il n'est PAS donné explicitement, CALCULE-le ainsi : EBE = (Production de l'exercice + Marge commerciale) − Consommations en provenance de tiers − Impôts et taxes (compte 63) − Charges de personnel (comptes 64 : salaires 641 + charges sociales 645). Approximation acceptable : EBE = Résultat d'exploitation + Dotations aux amortissements et provisions d'exploitation (681) − Reprises (781) + Autres charges − Autres produits. Si tu fais un calcul, donne quand même la valeur dans "ebe" (ne mets pas null) et indique-le dans "ebe_calcule": true.
-- "cc_groupe_actif_total" : à l'ACTIF du bilan (2050), ligne « Créances rattachées à des participations » ou, dans les créances, le poste « Groupe et associés » / « Comptes courants débiteurs » (comptes 451/455 débiteurs). C'est l'argent que d'autres sociétés du groupe DOIVENT à celle-ci.
-- "cc_associes_passif_total" : au PASSIF du bilan (2051), poste « Emprunts et dettes financières divers » détaillé en « Associés - comptes courants » / « Groupe et associés » (comptes 455/451 créditeurs, 4551/4558). C'est l'argent que la société DOIT aux associés / au groupe.
-- "cc_associe_dirigeant" : la part des comptes courants au passif appartenant au dirigeant personne physique (ex. VINCENT HILAIRE).
-- "comptes_courants_detail" : liste CHAQUE compte courant trouvé (actif ET passif) avec son nom exact tel qu'écrit (ex: BK AVENUE, SCI VH IMMO, VINCENT HILAIRE…), son sens et son montant. Cherche dans le détail des créances (actif) ET le détail des dettes financières (passif), y compris dans les tableaux annexes.
+
+COMPTES COURANTS — LIS TRÈS ATTENTIVEMENT (poste souvent mal lu). Les comptes courants entre sociétés du groupe et avec le dirigeant n'apparaissent PAS toujours sous le mot « compte courant ». Tu DOIS les chercher dans CES TROIS ENDROITS et fusionner ce que tu trouves :
+  1) Le BILAN synthétique (2050 actif / 2051 passif) : « Créances rattachées à des participations » (actif), « Autres créances » (actif), « Emprunts et dettes financières divers » et « Autres dettes » (passif).
+  2) Le tableau 2057 « ÉTAT DES ÉCHÉANCES DES CRÉANCES ET DES DETTES » : repère la ligne « Groupe et associés » qui existe À LA FOIS dans le cadre A (créances = ACTIF) et le cadre B (dettes = PASSIF). Lis aussi « Prêts et avances consentis aux associés (personnes physiques) » (actif) et « Emprunts et dettes associés (personnes physiques) » (passif) → c'est le CC du dirigeant.
+  3) Le DÉTAIL DE L'ACTIF et le DÉTAIL DU PASSIF (pages du cabinet) : les comptes courants y portent des noms explicites de société ou de personne, souvent abrégés. Exemples de libellés réels à reconnaître comme comptes courants : « Ass groupe c/c vh cie », « c/c VH », « VH Compagnie », « Fvh vh cie », « Bk avenue », « Bk saint jean », « Sci vh immo », « Compte courant <Nom> », ou un nom de personne (ex. « Vincent Hilaire », « Hilaire »). Le sigle « c/c » signifie compte courant.
+RÈGLES :
+- Un compte courant à l'ACTIF = la société liée (ou le dirigeant) DOIT de l'argent à cette entreprise (créance). Sens = "actif".
+- Un compte courant au PASSIF = cette entreprise DOIT de l'argent à l'associé/au groupe (dette). Sens = "passif".
+- "cc_groupe_actif_total" : SOMME de tous les comptes courants de groupe/sociétés liées situés à l'ACTIF (créances). Sur une présentation de cabinet, additionne les lignes « c/c » des sociétés liées du détail de l'actif.
+- "cc_associes_passif_total" : SOMME de tous les comptes courants au PASSIF (dettes envers associés/groupe).
+- "cc_associe_dirigeant" : UNIQUEMENT la part appartenant au DIRIGEANT personne physique (ex. Vincent Hilaire). Cherche « associés personnes physiques » (2057) et tout libellé portant un nom de personne. Si AUCUN compte courant de personne physique n'est présent dans ce bilan, mets 0 (et ne confonds JAMAIS le CC du groupe/des sociétés avec celui du dirigeant).
+- "comptes_courants_detail" : liste CHAQUE compte courant trouvé (actif ET passif), avec le nom EXACT lu (même abrégé), son sens, son montant NET de l'exercice clos. N'oublie aucune ligne « c/c » du détail de l'actif/passif.
 
 DEUX MODÈLES DE PRÉSENTATION possibles (la société a changé d'expert-comptable). Adapte-toi : un bilan peut être une liasse fiscale CERFA classique (formulaires 2050/2051/2052/2053 numérotés), OU une plaquette/présentation de cabinet avec des intitulés et une mise en page différents. Les chiffres sont les mêmes, seuls les libellés et l'ordre changent. Détecte la présentation et renseigne "modele_presentation" : "liasse_cerfa" (formulaires numérotés 2050…) ou "plaquette_cabinet" (présentation libre par un cabinet). Indique aussi le nom du cabinet/expert-comptable s'il apparaît (en bas de page, mention « établi par… ») dans "cabinet".
 
@@ -3213,7 +3221,7 @@ Objet JSON attendu :
  "cout_dirigeant_detail": [ {"libelle": "intitulé exact lu dans le compte de résultat détaillé", "montant": nombre } ],
  "comptes_courants_detail": [ {"nom": "nom société ou personne", "sens": "actif" ou "passif", "montant": nombre } ]
 }
-Règle pour comptes_courants_detail : "actif" = la société liée DOIT de l'argent à cette entreprise (créance, à l'actif) ; "passif" = cette entreprise DOIT de l'argent (dette envers associé/groupe, au passif). Sois exhaustif : si une ligne « Groupe et associés » existe à l'actif ET au passif, liste les deux.`;
+Règle pour comptes_courants_detail : "actif" = la société liée DOIT de l'argent à cette entreprise (créance, à l'actif) ; "passif" = cette entreprise DOIT de l'argent (dette envers associé/groupe, au passif). Sois exhaustif : parcours le tableau 2057 (cadres A et B « Groupe et associés ») ET le détail de l'actif/passif du cabinet, et liste toutes les lignes « c/c » ou portant un nom de société/personne du groupe. Ne confonds PAS les dettes fournisseurs, fiscales ou sociales avec des comptes courants : seules les sommes envers le groupe, les sociétés liées ou les associés sont des comptes courants. Si une ligne « Groupe et associés » existe à l'actif ET au passif, liste les deux.`;
 
     // Envoi avec repli automatique : on tente le 1er palier ; si le serveur refuse pour
     // cause de taille (413 / "entity too large"), on régénère en plus compressé et on
@@ -3470,12 +3478,13 @@ async function renderCoutVincent() {
   body.innerHTML = '<div style="color:var(--text3);font-size:13px;padding:14px;text-align:center;">Chargement…</div>';
   // Récupère le dernier exercice de chaque société (cache sinon base)
   const last = {};
+  const allRows = {}; // TOUS les exercices par société, pour la vue pluriannuelle
   for(const soc of CV_SOCS){
     let rows = SOC_FIN_CACHE[soc];
     if(!rows){
       try { const {data}=await sb.from('societe_finances').select('*').eq('societe',soc).order('exercice',{ascending:false}); rows=(data||[]).map(r=>({...r, donnees: completerCC(r.donnees||{})})); } catch(e){ rows=[]; }
     }
-    if(rows && rows.length) last[soc] = rows[0];
+    if(rows && rows.length){ last[soc] = rows[0]; allRows[soc] = rows; }
   }
   const socsAvecData = CV_SOCS.filter(s=>last[s]);
   if(!socsAvecData.length){
@@ -3555,6 +3564,61 @@ async function renderCoutVincent() {
   html += `</tbody></table></div>`;
   // Note méthodo + idée "coût de remplacement"
   html += `<div class="alert a-w"><span>🧭</span><div><strong>Lecture.</strong> Ce total représente ce que Vincent coûte aujourd'hui aux sociétés (charges déjà déduites des résultats). Pour raisonner « combien coûterait son remplacement », il faudrait comparer cette rémunération + avantages au salaire d'un directeur salarié équivalent — dis-le moi si tu veux que j'ajoute ce comparatif.</div></div>`;
+
+  // ── ÉVOLUTION ANNÉE PAR ANNÉE (toutes sociétés × tous exercices) ──
+  // Construit une matrice société × année à partir de TOUS les exercices connus.
+  // Chaque cellule = coût du dirigeant pour cette société cet exercice-là.
+  const annees = new Set();
+  Object.keys(allRows).forEach(soc => (allRows[soc]||[]).forEach(r => { const y=parseInt(r.exercice); if(!isNaN(y)) annees.add(y); }));
+  const anneesTri = Array.from(annees).sort((a,b)=>a-b); // croissant : 2022, 2023, 2024…
+  if(anneesTri.length){
+    // coutParSocAnnee[soc][annee] = total coût dirigeant
+    const coutParSocAnnee = {}, totParAnnee = {}, remParAnnee = {};
+    anneesTri.forEach(y => { totParAnnee[y]=null; remParAnnee[y]=null; });
+    CV_SOCS.forEach(soc=>{
+      if(!allRows[soc]) return;
+      coutParSocAnnee[soc] = {};
+      allRows[soc].forEach(r=>{
+        const y = parseInt(r.exercice); if(isNaN(y)) return;
+        const d = r.donnees || {};
+        const t = coutDirigeantTotal(d);
+        coutParSocAnnee[soc][y] = t;
+        if(t!=null){ totParAnnee[y] = (totParAnnee[y]||0) + t; }
+        const rem = Number(d.remuneration_dirigeant);
+        if(!isNaN(rem) && d.remuneration_dirigeant!=null){ remParAnnee[y] = (remParAnnee[y]||0) + rem; }
+      });
+    });
+
+    // Tableau principal : combien Vincent coûte au GROUPE chaque année
+    html += `<div class="card"><div class="card-title">📈 Évolution — combien Vincent coûte au groupe, année par année</div>`;
+    html += `<div class="alert a-b" style="margin-bottom:10px;"><span>💡</span><div>Chaque colonne = un exercice. Le total additionne le coût du dirigeant (rémunération + charges + avantages) lu dans le bilan de chaque société pour cette année-là. « — » = aucun bilan exploité pour cette société cette année.</div></div>`;
+    html += `<div style="overflow-x:auto;"><table class="tbl"><thead><tr><th>Société</th>${anneesTri.map(y=>'<th class="r">'+y+'</th>').join('')}</tr></thead><tbody>`;
+    CV_SOCS.forEach(soc=>{
+      if(!coutParSocAnnee[soc]) return;
+      const cells = anneesTri.map(y=>{
+        const v = coutParSocAnnee[soc][y];
+        return '<td class="r">'+(v!=null?eurF(v):'<span style="color:var(--text3);">—</span>')+'</td>';
+      }).join('');
+      html += `<tr><td><strong>${IS_SOC_LABEL[soc]||soc}</strong></td>${cells}</tr>`;
+    });
+    // Ligne rémunération seule (sous-total lisible)
+    html += `<tr style="border-top:1px solid var(--border);"><td>dont rémunération de gérance</td>${anneesTri.map(y=>'<td class="r">'+(remParAnnee[y]!=null?eurF(remParAnnee[y]):'<span style="color:var(--text3);">—</span>')+'</td>').join('')}</tr>`;
+    // Ligne total groupe
+    html += `<tr style="border-top:2px solid var(--border2);"><td style="font-weight:700;">Total groupe</td>${anneesTri.map(y=>'<td class="r" style="font-weight:700;">'+(totParAnnee[y]!=null?eurF(totParAnnee[y]):'<span style="color:var(--text3);">—</span>')+'</td>').join('')}</tr>`;
+    html += `</tbody></table></div>`;
+    // Mini-récap en texte : variation d'une année à l'autre
+    const anneesAvecTotal = anneesTri.filter(y=>totParAnnee[y]!=null);
+    if(anneesAvecTotal.length>=2){
+      const p = anneesAvecTotal[anneesAvecTotal.length-2], d = anneesAvecTotal[anneesAvecTotal.length-1];
+      const diff = totParAnnee[d]-totParAnnee[p];
+      const pct = totParAnnee[p]>0 ? Math.round(diff/totParAnnee[p]*100) : null;
+      const sens = diff>0 ? 'hausse' : (diff<0 ? 'baisse' : 'stable');
+      const col = diff>0 ? 'var(--danger)' : (diff<0 ? 'var(--success)' : 'var(--text2)');
+      html += `<div style="margin-top:10px;font-size:13px;color:var(--text2);">Entre <strong>${p}</strong> et <strong>${d}</strong> : <span style="color:${col};font-weight:600;">${diff>0?'+':''}${eurF(diff)}${pct!=null?(' ('+(diff>0?'+':'')+pct+'%)'):''}</span> — ${sens}.</div>`;
+    }
+    html += `</div>`;
+  }
+
   body.innerHTML = html;
 }
 
@@ -3638,6 +3702,23 @@ function renderCCavecVH(soc, d, exercice){
   </div>`;
 }
 
+// Supprime les CHIFFRES d'un exercice (societe_finances) pour une société donnée.
+// Indépendant des documents : sert à purger un exercice orphelin (chiffres restés en base
+// sans document associé). Rafraîchit fiche société, dashboard et page Coût Vincent.
+async function delExerciceFin(soc, exercice){
+  if(!confirm('Supprimer les chiffres de l\'exercice '+exercice+' pour '+(IS_SOC_LABEL[soc]||soc)+' ?\n\nTout ce qui concerne cet exercice (résultat, capitaux propres, CA, structure, comptes courants) disparaîtra de partout. Action irréversible.')) return;
+  try {
+    // exercice peut être stocké en nombre ou en texte selon les imports : on tente les deux.
+    await sb.from('societe_finances').delete().eq('societe',soc).eq('exercice',exercice);
+    const n = parseInt(exercice);
+    if(!isNaN(n)) await sb.from('societe_finances').delete().eq('societe',soc).eq('exercice',n);
+  } catch(e){ alert('Suppression impossible : '+((e&&e.message)||'')); return; }
+  delete SOC_FIN_CACHE[soc];
+  try { await renderSocFinances(soc); } catch(e){}
+  try { if(typeof renderCoutVincent==='function') renderCoutVincent(); } catch(e){}
+  try { renderDashboardGroupe(); } catch(e){}
+}
+
 async function renderSocFinances(soc) {
   const zone = document.querySelector('.fin-zone[data-soc="'+soc+'"]');
   const ccZone = document.querySelector('.cc-zone[data-soc="'+soc+'"]');
@@ -3674,6 +3755,15 @@ async function renderSocFinances(soc) {
     modeleBadge = ` <span style="display:inline-block;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:1px 8px;font-size:11px;color:var(--text2);">📄 ${libelle}${d.cabinet?(' · '+d.cabinet):''}</span>`;
   }
   let html = `<div class="alert a-g" style="margin-bottom:12px;"><span>✓</span><div>Chiffres extraits automatiquement du bilan <strong>${d.date_cloture||('exercice '+last.exercice)}</strong>.${modeleBadge} ${rows.length>1?('Historique sur '+rows.length+' exercices ci-dessous.'):''}</div></div>`;
+  // Barre de gestion des exercices enregistrés : permet de supprimer les chiffres d'un
+  // exercice (ex. un exercice orphelin sans document), indépendamment des documents Dropbox.
+  html += `<div class="card" style="margin-bottom:12px;"><div class="card-title">Exercices enregistrés</div>
+    <div class="alert a-b" style="margin-bottom:10px;"><span>🗑</span><div>Supprime ici les chiffres d'un exercice. Tout ce qui concerne cet exercice (résultat, capitaux propres, CA, structure, comptes courants) disparaîtra de partout. Le document éventuel dans Dropbox n'est pas touché.</div></div>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;">`;
+  rows.slice().sort((a,b)=>b.exercice-a.exercice).forEach(r=>{
+    html += `<span style="display:inline-flex;align-items:center;gap:6px;background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:4px 6px 4px 12px;font-size:12px;font-weight:600;">Exercice ${r.exercice}<button class="btn" style="font-size:11px;padding:3px 8px;color:var(--danger);border-color:var(--danger);" onclick="delExerciceFin('${soc}','${r.exercice}')">🗑 Supprimer</button></span>`;
+  });
+  html += `</div></div>`;
   html += `<div class="g4">${kpi('Résultat net',d.resultat_net,'acc')}${kpi('Capitaux propres',d.capitaux_propres)}${kpi("Chiffre d'affaires",d.chiffre_affaires)}${kpi('Trésorerie',d.tresorerie,'war')}</div>`;
 
   // Encarts explicatifs en langage simple
