@@ -222,7 +222,6 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:14
       <span class="tag tag-b">2,5 parts</span>
       <span class="tag tag-r">SARL TNS ⚠</span>
     </span>
-    <button class="btn btn-p" onclick="sw('import',null)">+ Importer</button>
   </div>
 </div>
 <div class="content">
@@ -231,7 +230,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:14
 <div id="tab-dashboard" class="panel active">
   <div style="display:flex;justify-content:flex-end;margin-bottom:10px;">
     <span id="maj-badge" style="display:inline-flex;align-items:center;gap:6px;background:var(--success-l);color:var(--success);font-size:11px;font-weight:600;font-family:var(--mono);padding:4px 11px;border-radius:20px;border:1px solid rgba(22,101,52,0.2);">
-      <span style="font-size:9px;">●</span> Mis à jour le vendredi 12 juin 2026 à 09h53
+      <span style="font-size:9px;">●</span> Mis à jour le vendredi 12 juin 2026 à 09h58
     </span>
   </div>
   <!-- Optimisation panel toujours visible -->
@@ -2950,12 +2949,55 @@ function socImpRow(list, d) {
   row.className = 'fitem';
   const ext = (d.type||'').toUpperCase();
   const dl = d.url ? `<a href="${d.url}" target="_blank" class="btn" style="font-size:11px;padding:3px 9px;">Ouvrir</a>` : '';
-  const del = d.id ? `<button class="btn" style="font-size:11px;padding:3px 9px;" onclick="socImpDelete(this,'${d.id}','${(d.dropbox_path||'').replace(/'/g,"")}','${d.societe||''}','${d.exercice||''}','${(d.doctype||'').replace(/'/g,"")}')">Suppr.</button>` : '';
+  const safePath = (d.dropbox_path||'').replace(/'/g,"");
+  const safeDoc = (d.doctype||'').replace(/'/g,"");
+  const del = d.id ? `<button class="btn" style="font-size:11px;padding:3px 9px;" onclick="socImpDelete(this,'${d.id}','${safePath}','${d.societe||''}','${d.exercice||''}','${safeDoc}')">Suppr.</button>` : '';
+  // Sélecteur d'exercice éditable : permet de re-ranger le fichier sur la bonne année
+  // (déplace dans Dropbox + met à jour l'index), même si l'IA n'a pas pu lire le bilan.
+  let yearSel = `Exercice ${d.exercice||'?'}`;
+  if(d.id){
+    const cur = parseInt(d.exercice)||new Date().getFullYear();
+    let opts='';
+    for(let y=Math.max(cur, new Date().getFullYear()); y>=2018; y--) opts+=`<option value="${y}"${y===cur?' selected':''}>Exercice ${y}</option>`;
+    yearSel = `<select class="si-rowyear" style="font-size:11px;padding:1px 4px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text2);font-family:var(--font);" onchange="socImpReclasse(this,'${d.id}','${safePath}','${d.societe||''}','${safeDoc}')">${opts}</select>`;
+  }
   row.innerHTML = `<div class="fext ${ext==='CSV'?'csv':''}">${ext}</div>
-<div class="finfo"><div class="fname">${d.nom}</div><div class="fmeta">${d.doctype||''} · Exercice ${d.exercice||''}</div></div>
+<div class="finfo"><div class="fname">${d.nom}</div><div class="fmeta" style="display:flex;align-items:center;gap:6px;">${d.doctype||''} · ${yearSel}</div></div>
 <div style="display:flex;gap:6px;align-items:center;">${dl}${del}<span class="fst ${d.statut==='archive'?'fst-ok':'fst-p'}">${d.statut==='archive'?'Dropbox ✓':(d.statut==='up'?'…':'')}</span></div>`;
   list.prepend(row);
   return row;
+}
+
+// Re-classe manuellement un fichier sur un autre exercice : déplace le fichier dans
+// Dropbox vers /<Société>/<NouvelleAnnée>/ et met à jour l'index societe_docs.
+async function socImpReclasse(sel, id, dropbox_path, soc, doctype) {
+  const newYear = parseInt(sel.value);
+  if(!newYear) return;
+  sel.disabled = true;
+  let newPath = dropbox_path, newUrl = null;
+  try {
+    const folder = IS_SOC_FOLDER[soc] || soc;
+    if(dropbox_path && folder){
+      // Reconstruit un nom propre avec la nouvelle année (conserve l'extension d'origine)
+      const ext = (dropbox_path.split('.').pop()||'pdf').toLowerCase();
+      const docClean = (doctype||'Bilan').replace(/[^a-zA-Z0-9]/g,'_');
+      const dateStr = new Date().toISOString().slice(0,10);
+      newPath = `/${folder}/${newYear}/${docClean}_${folder}_${newYear}_${dateStr}.${ext}`;
+      const tok = await dbxToken();
+      const mv = await fetch('https://api.dropboxapi.com/2/files/move_v2', {
+        method:'POST', headers:{'Authorization':'Bearer '+tok,'Content-Type':'application/json'},
+        body: JSON.stringify({from_path:dropbox_path, to_path:newPath, autorename:true})
+      });
+      if(mv.ok){ const meta=await mv.json(); newPath=(meta.metadata&&meta.metadata.path_lower)||newPath; newUrl=await dbxShareLink(tok,newPath); }
+      else { newPath = dropbox_path; }
+    }
+  } catch(e){ newPath = dropbox_path; }
+  try {
+    const upd = { exercice: newYear };
+    if(newPath && newPath!==dropbox_path){ upd.dropbox_path = newPath; if(newUrl) upd.url = newUrl; }
+    await sb.from('societe_docs').update(upd).eq('id', id);
+  } catch(e){}
+  const box = sel.closest('.socimp'); if(box) socImpRender(box);
 }
 
 // Affiche les fichiers déjà importés d'une société
@@ -2972,14 +3014,12 @@ async function socImpRender(box) {
     else docs = res.data || [];
   } catch(e){ readErr = (e&&e.message)||'exception'; }
   const byYear={}; docs.forEach(d=>{(byYear[d.exercice]=byYear[d.exercice]||[]).push(d);});
-  // Frise : exercices avec bilan + l'exercice en cours (pas d'années futures vides)
+  // Frise : UNIQUEMENT les exercices pour lesquels des fichiers existent réellement.
+  // (pas de carte fantôme pour l'année en cours si rien n'a été déposé)
   if(frise) {
-    const now = new Date().getFullYear();
     let html = '';
-    const annees = Object.keys(byYear).map(Number);
-    const top = Math.max(now, ...(annees.length?annees:[now]));
-    const bottom = Math.min(2023, ...(annees.length?annees:[2023]));
-    for(let y=top; y>=bottom; y--) {
+    const annees = Object.keys(byYear).map(Number).sort((a,b)=>b-a); // récent → ancien
+    for(const y of annees) {
       const items = byYear[y] || [];
       const hasBilan = items.some(d => /bilan|compte de r|liasse|fec|grand livre|balance/i.test(d.doctype||''));
       const hasAG = items.some(d => /assembl|pv|a\.?g\.?/i.test(d.doctype||''));
@@ -2992,7 +3032,7 @@ async function socImpRender(box) {
         <div style="display:flex;gap:4px;flex-wrap:wrap;">${chip(hasBilan,'Bilan')}${chip(hasAG,'PV AG')}</div>
       </div>`;
     }
-    frise.innerHTML = html;
+    frise.innerHTML = html || '<div style="font-size:12px;color:var(--text3);padding:4px 2px;">Aucun exercice encore — dépose un bilan ci-dessous, il apparaîtra ici rangé sur sa vraie année.</div>';
   }
   if(readErr){ list.innerHTML='<div style="font-size:12px;color:var(--warn);padding:8px;text-align:center;">⚠ Impossible de lire l\'index des fichiers (table societe_docs). Détail : '+readErr+'</div>'; return; }
   if(!docs.length){ list.innerHTML='<div style="color:var(--text3);font-size:12px;padding:6px 0;text-align:center;">Aucun fichier encore — dépose les bilans des derniers exercices ci-dessus.</div>'; return; }
@@ -3236,8 +3276,38 @@ Pour comptes_courants_detail : "actif" = la société liée DOIT de l'argent à 
     note.innerHTML = '✓ Bilan <strong>'+realYear+'</strong> lu automatiquement'+(realYear!==parseInt(year)?' (rangé en '+realYear+' d\'après la date du bilan)':'')+' — résultat net : <strong>'+(fin.resultat_net!=null?Math.round(fin.resultat_net).toLocaleString('fr-FR')+'€':'n.c.')+'</strong>, capitaux propres : <strong>'+(fin.capitaux_propres!=null?Math.round(fin.capitaux_propres).toLocaleString('fr-FR')+'€':'n.c.')+'</strong>';
     renderSocFinances(soc);
   } catch(e) {
+    // Repli : l'IA n'a pas pu lire le bilan. On tente de deviner l'année à partir
+    // du nom du fichier (ex. « bilan2022.pdf ») pour au moins ranger correctement.
+    let fbYear = null;
+    const m = (file.name||'').match(/(20\d{2})/g);
+    if(m && m.length){ const y=parseInt(m[m.length-1]); if(y>=2015 && y<=2035) fbYear = y; }
+    if(ctx && fbYear && fbYear !== parseInt(year)) {
+      try {
+        const oldPath = ctx.dropbox_path;
+        let newPath = oldPath, newUrl = null;
+        if(oldPath && ctx.folder){
+          const docClean = (ctx.doctype||'Bilan').replace(/[^a-zA-Z0-9]/g,'_');
+          newPath = `/${ctx.folder}/${fbYear}/${docClean}_${ctx.folder}_${fbYear}_${ctx.dateStr}.${ctx.ext}`;
+          try {
+            const tok = await dbxToken();
+            const mv = await fetch('https://api.dropboxapi.com/2/files/move_v2', {
+              method:'POST', headers:{'Authorization':'Bearer '+tok,'Content-Type':'application/json'},
+              body: JSON.stringify({from_path:oldPath, to_path:newPath, autorename:true})
+            });
+            if(mv.ok){ const meta=await mv.json(); newPath=(meta.metadata&&meta.metadata.path_lower)||newPath; newUrl=await dbxShareLink(tok,newPath); }
+            else { newPath = oldPath; }
+          } catch(er){ newPath = oldPath; }
+        }
+        if(ctx.docId){
+          const upd = { exercice: fbYear };
+          if(newPath && newPath!==oldPath){ upd.dropbox_path = newPath; if(newUrl) upd.url = newUrl; }
+          try { await sb.from('societe_docs').update(upd).eq('id', ctx.docId); } catch(er){}
+        }
+        socImpRender(box);
+      } catch(er){}
+    }
     note.style.color='var(--warn)';
-    note.textContent='⚠ Lecture auto indisponible ('+((e&&e.message)||'')+'). Le fichier reste archivé ; tu peux me l\'envoyer dans le chat.';
+    note.innerHTML='⚠ Lecture auto des chiffres indisponible ('+((e&&e.message)||'')+'). Le fichier reste archivé'+(fbYear?(' et a été rangé en <strong>'+fbYear+'</strong> (d\'après son nom)'):'')+'. Tu peux corriger l\'exercice via le menu sur la ligne du fichier, et m\'envoyer le bilan dans le chat.';
   }
 }
 
@@ -3363,7 +3433,7 @@ async function renderSocFinances(soc) {
 
   // Historique multi-exercices
   if(rows.length>1){
-    const cols = rows.slice().sort((a,b)=>a.exercice-b.exercice);
+    const cols = rows.slice().sort((a,b)=>b.exercice-a.exercice);
     html += `<div class="card"><div class="card-title">📊 Historique par exercice</div><div style="overflow-x:auto;"><table class="tbl"><thead><tr><th>Poste</th>${cols.map(r=>'<th class="r">'+r.exercice+'</th>').join('')}</tr></thead><tbody>`;
     FIN_LABELS.forEach(([k,lab])=>{
       const vals = cols.map(r=>(r.donnees||{})[k]);
