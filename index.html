@@ -217,9 +217,11 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:14
 <div class="topbar">
   <h2 id="page-title">Vue d'ensemble</h2>
   <div class="topbar-r">
-    <span class="tag tag-w">TMI 41%</span>
-    <span class="tag tag-b">2,5 parts</span>
-    <span class="tag tag-r">SARL TNS ⚠</span>
+    <span id="perso-tags" style="display:flex;align-items:center;gap:8px;">
+      <span class="tag tag-w">TMI 41%</span>
+      <span class="tag tag-b">2,5 parts</span>
+      <span class="tag tag-r">SARL TNS ⚠</span>
+    </span>
     <button class="btn btn-p" onclick="sw('import',null)">+ Importer</button>
   </div>
 </div>
@@ -229,7 +231,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:14
 <div id="tab-dashboard" class="panel active">
   <div style="display:flex;justify-content:flex-end;margin-bottom:10px;">
     <span id="maj-badge" style="display:inline-flex;align-items:center;gap:6px;background:var(--success-l);color:var(--success);font-size:11px;font-weight:600;font-family:var(--mono);padding:4px 11px;border-radius:20px;border:1px solid rgba(22,101,52,0.2);">
-      <span style="font-size:9px;">●</span> Mis à jour le vendredi 12 juin 2026 à 09h44
+      <span style="font-size:9px;">●</span> Mis à jour le vendredi 12 juin 2026 à 09h49
     </span>
   </div>
   <!-- Optimisation panel toujours visible -->
@@ -517,21 +519,61 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:14
 <!-- AUTRES SOCIETES -->
 <div id="tab-soc-ba" class="panel">
   <div class="alert a-b"><span>▣</span><div><strong>Burger Avenue SARL</strong> — SARL · Restauration · Montpellier (BK 500). Détenue à 100% par VH Company.</div></div>
+  <div class="card">
+    <div class="card-title">🔄 Compte courant avec VH Company au 30/06/2025</div>
+    <div class="alert a-w" style="margin-bottom:12px;"><span>↩</span><div><strong>Burger Avenue doit de l'argent à VH Company.</strong> VH (la mère) a prêté à Burger Avenue (la fille). C'est une dette de Burger Avenue envers la holding, à rembourser un jour.</div></div>
+    <table class="tbl">
+      <thead><tr><th>Relation</th><th>Sens</th><th class="r">30/06/2025</th><th class="r">N-1 (30/06/2024)</th></tr></thead>
+      <tbody>
+        <tr><td><strong>VH Company</strong> (mère)</td><td><span class="tag tag-w">Burger Avenue doit à VH</span></td><td class="r r">169 303€</td><td class="r">195 414€</td></tr>
+      </tbody>
+    </table>
+  </div>
   <div class="fin-zone" data-soc="ba"><div class="card"><div class="card-title">Suivi par exercice</div><div style="color:var(--text3);font-size:13px;text-align:center;padding:18px;">En attente du bilan. Dépose-le ci-dessous : l'application le lira automatiquement et remplira les chiffres ici (résultat, capitaux propres, comptes courants, dividendes…).</div></div></div>
   <div class="socimp" data-soc="ba"></div>
 </div>
 <div id="tab-soc-bka" class="panel">
   <div class="alert a-b"><span>▣</span><div><strong>BK Avenue SARL</strong> — SARL · Restauration · St-Clément-de-Rivière (BK 526). Détenue à 100% par VH Company. TVA : FR30830144242.</div></div>
+  <div class="card">
+    <div class="card-title">🔄 Compte courant avec VH Company au 30/06/2025</div>
+    <div class="alert a-w" style="margin-bottom:12px;"><span>↩</span><div><strong>BK Avenue doit de l'argent à VH Company.</strong> VH (la mère) a prêté à BK Avenue (la fille). C'est une dette de BK Avenue envers la holding, à rembourser un jour.</div></div>
+    <table class="tbl">
+      <thead><tr><th>Relation</th><th>Sens</th><th class="r">30/06/2025</th><th class="r">N-1 (30/06/2024)</th></tr></thead>
+      <tbody>
+        <tr><td><strong>VH Company</strong> (mère)</td><td><span class="tag tag-w">BK Avenue doit à VH</span></td><td class="r r">480 029€</td><td class="r">501 656€</td></tr>
+      </tbody>
+    </table>
+  </div>
   <div class="fin-zone" data-soc="bka"><div class="card"><div class="card-title">Suivi par exercice</div><div style="color:var(--text3);font-size:13px;text-align:center;padding:18px;">En attente du bilan. Dépose-le ci-dessous : l'application le lira automatiquement et remplira les chiffres ici (résultat, capitaux propres, comptes courants, dividendes…).</div></div></div>
   <div class="socimp" data-soc="bka"></div>
 </div>
 <div id="tab-soc-bksj" class="panel">
   <div class="alert a-b"><span>▣</span><div><strong>BK Saint-Jean SARL</strong> — SARL · Restauration · St-Jean-de-Védas (BK 509). Détenue à 100% par VH Company.</div></div>
+  <div class="card">
+    <div class="card-title">🔄 Compte courant avec VH Company au 30/06/2025</div>
+    <div class="alert a-g" style="margin-bottom:12px;"><span>↪</span><div><strong>BK Saint-Jean doit de l'argent à VH Company.</strong> C'est BK Saint-Jean (la fille) qui doit à VH (la mère) : la holding a une créance sur la société. À rembourser un jour à VH.</div></div>
+    <table class="tbl">
+      <thead><tr><th>Relation</th><th>Sens</th><th class="r">30/06/2025</th><th class="r">N-1 (30/06/2024)</th></tr></thead>
+      <tbody>
+        <tr><td><strong>VH Company</strong> (mère)</td><td><span class="tag tag-g">BK Saint-Jean doit à VH</span></td><td class="r g">545 605€</td><td class="r">303 650€</td></tr>
+      </tbody>
+    </table>
+  </div>
   <div class="fin-zone" data-soc="bksj"><div class="card"><div class="card-title">Suivi par exercice</div><div style="color:var(--text3);font-size:13px;text-align:center;padding:18px;">En attente du bilan. Dépose-le ci-dessous : l'application le lira automatiquement et remplira les chiffres ici (résultat, capitaux propres, comptes courants, dividendes…).</div></div></div>
   <div class="socimp" data-soc="bksj"></div>
 </div>
 <div id="tab-soc-fvh" class="panel">
   <div class="alert a-b"><span>▣</span><div><strong>FVH SARL</strong> — SARL détenue à 100% par VH Company.</div></div>
+  <div class="card">
+    <div class="card-title">🔄 Compte courant avec VH Company au 30/06/2025</div>
+    <div class="alert a-g" style="margin-bottom:12px;"><span>↪</span><div><strong>FVH doit de l'argent à VH Company.</strong> C'est FVH (la fille) qui doit à VH (la mère) : la holding a une créance sur la société. Montant en baisse vs N-1 (171 514€ → 101 000€).</div></div>
+    <table class="tbl">
+      <thead><tr><th>Relation</th><th>Sens</th><th class="r">30/06/2025</th><th class="r">N-1 (30/06/2024)</th></tr></thead>
+      <tbody>
+        <tr><td><strong>VH Company</strong> (mère)</td><td><span class="tag tag-g">FVH doit à VH</span></td><td class="r g">101 000€</td><td class="r">171 514€</td></tr>
+      </tbody>
+    </table>
+  </div>
   <div class="fin-zone" data-soc="fvh"><div class="card"><div class="card-title">Suivi par exercice</div><div style="color:var(--text3);font-size:13px;text-align:center;padding:18px;">En attente du bilan. Dépose-le ci-dessous : l'application le lira automatiquement et remplira les chiffres ici (résultat, capitaux propres, comptes courants…).</div></div></div>
   <div class="socimp" data-soc="fvh"></div>
 </div>
@@ -1820,6 +1862,9 @@ function sw(id, btn) {
   document.getElementById('tab-' + id).classList.add('active');
   if (btn) btn.classList.add('active');
   document.getElementById('page-title').textContent = titles[id] || id;
+  // Tags perso (TMI, parts, TNS) : visibles uniquement sur la vue d'ensemble, pas en société
+  var pt = document.getElementById('perso-tags');
+  if (pt) pt.style.display = (id === 'dashboard') ? 'flex' : 'none';
 }
 
 // ── OPTIMISATION ──
