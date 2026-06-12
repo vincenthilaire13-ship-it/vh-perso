@@ -232,7 +232,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:14
 <div id="tab-dashboard" class="panel active">
   <div style="display:flex;justify-content:flex-end;margin-bottom:10px;">
     <span id="maj-badge" style="display:inline-flex;align-items:center;gap:6px;background:var(--success-l);color:var(--success);font-size:11px;font-weight:600;font-family:var(--mono);padding:4px 11px;border-radius:20px;border:1px solid rgba(22,101,52,0.2);">
-      <span style="font-size:9px;">●</span> Mis à jour le vendredi 12 juin 2026 à 10h20
+      <span style="font-size:9px;">●</span> Mis à jour le vendredi 12 juin 2026 à 13h08
     </span>
   </div>
   <!-- Optimisation panel toujours visible -->
@@ -3202,22 +3202,31 @@ async function virRefreshAll() {
 // récupère les chiffres clés en JSON, et les enregistre dans societe_finances.
 
 // Convertit les N premières pages d'un PDF en images JPEG base64 compressées
-async function pdfToImages(file, maxPages) {
+async function pdfToImages(file, maxPages, opts) {
   if(!window.pdfjsLib) throw new Error('pdf.js non chargé');
+  opts = opts || {};
+  const maxW = opts.maxWidth || 1300;   // largeur cible (suffisant pour lire une liasse)
+  const quality = opts.quality || 0.72; // compression JPEG
   const buf = await file.arrayBuffer();
   const pdf = await pdfjsLib.getDocument({data:buf}).promise;
   const n = Math.min(pdf.numPages, maxPages||6);
   const imgs = [];
   for(let p=1; p<=n; p++){
     const page = await pdf.getPage(p);
-    const vp = page.getViewport({scale:2.0}); // plus net : liasses denses en petits caractères
+    const base = page.getViewport({scale:1});
+    // Échelle calée pour atteindre maxW (sans dépasser ~2x), garde le texte net mais léger
+    const scale = Math.min(2, Math.max(1, maxW / base.width));
+    const vp = page.getViewport({scale});
     const canvas = document.createElement('canvas');
     canvas.width = vp.width; canvas.height = vp.height;
     await page.render({canvasContext:canvas.getContext('2d'), viewport:vp}).promise;
-    imgs.push(canvas.toDataURL('image/jpeg', 0.85).split(',')[1]);
+    imgs.push(canvas.toDataURL('image/jpeg', quality).split(',')[1]);
   }
   return imgs;
 }
+
+// Estime le poids total (octets) d'un lot d'images base64
+function imgsBytes(imgs){ return imgs.reduce((s,b)=>s + Math.floor((b.length*3)/4), 0); }
 
 async function extraireBilanIA(box, file, soc, year, rowEl, ctx) {
   const zone = box.querySelector('.si-ia');
@@ -3226,9 +3235,16 @@ async function extraireBilanIA(box, file, soc, year, rowEl, ctx) {
   note.textContent='🤖 Lecture automatique du bilan en cours… (cela peut prendre 10-20 secondes)';
   if(zone) zone.prepend(note);
   try {
-    const imgs = await pdfToImages(file, 18);
-    const content = imgs.map(b64 => ({type:'image', source:{type:'base64', media_type:'image/jpeg', data:b64}}));
-    content.push({type:'text', text:
+    // Paliers de compression, du plus lisible au plus léger. On ne descend que si le
+    // serveur refuse (413). La limite des fonctions Vercel est ~4,5 Mo de corps de
+    // requête ; le base64 gonfle de +33 %, donc on vise petit dès le départ.
+    const plan = [
+      {pages:10, maxWidth:1100, quality:0.62},
+      {pages:8,  maxWidth:1000, quality:0.55},
+      {pages:6,  maxWidth:900,  quality:0.5},
+      {pages:5,  maxWidth:820,  quality:0.45}
+    ];
+    const promptTxt =
 `Tu es expert-comptable français. Voici les pages d'une liasse fiscale / bilan d'une société française (${IS_SOC_LABEL[soc]||soc}, exercice indicatif ${year}). Lis attentivement TOUTES les pages, y compris l'actif, le passif, le compte de résultat, et les tableaux annexes (soldes intermédiaires de gestion, détail des créances et dettes). Réponds UNIQUEMENT par un objet JSON valide, sans aucun texte autour, sans backticks. Mets null UNIQUEMENT si la valeur est réellement introuvable. Les nombres sont en euros, entiers, sans espaces ni symboles. Un déficit ou une perte est négatif. Prends les montants NETS de la colonne de l'exercice clos (pas la colonne N-1, pas le brut).
 
 OÙ TROUVER CHAQUE POSTE dans une liasse française (formulaires 2050 à 2059) :
@@ -3289,19 +3305,48 @@ Objet JSON attendu :
  "autres_avantages_dirigeant": nombre,
  "comptes_courants_detail": [ {"nom": "nom société ou personne", "sens": "actif" ou "passif", "montant": nombre } ]
 }
-Règle pour comptes_courants_detail : "actif" = la société liée DOIT de l'argent à cette entreprise (créance, à l'actif) ; "passif" = cette entreprise DOIT de l'argent (dette envers associé/groupe, au passif). Sois exhaustif : si une ligne « Groupe et associés » existe à l'actif ET au passif, liste les deux.`});
-    const r = await fetch('/api/ia', {
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ model:'claude-sonnet-4-5', max_tokens:4000, messages:[{role:'user', content}] })
-    });
-    const data = await r.json();
-    if(!r.ok) throw new Error((data && data.error) || ('HTTP '+r.status));
+Règle pour comptes_courants_detail : "actif" = la société liée DOIT de l'argent à cette entreprise (créance, à l'actif) ; "passif" = cette entreprise DOIT de l'argent (dette envers associé/groupe, au passif). Sois exhaustif : si une ligne « Groupe et associés » existe à l'actif ET au passif, liste les deux.`;
+
+    // Envoi avec repli automatique : on tente le 1er palier ; si le serveur refuse pour
+    // cause de taille (413 / "entity too large"), on régénère en plus compressé et on
+    // réessaie le palier suivant. On garde le dernier message d'erreur utile.
+    let raw = null, r = null, lastErr = null;
+    for(let i=0; i<plan.length; i++){
+      const cfg = plan[i];
+      if(note) note.innerHTML = '⏳ Lecture du bilan en cours…' + (i>0?(' (compression '+(i+1)+'/'+plan.length+')'):'');
+      const imgs = await pdfToImages(file, cfg.pages, {maxWidth:cfg.maxWidth, quality:cfg.quality});
+      const content = imgs.map(b64 => ({type:'image', source:{type:'base64', media_type:'image/jpeg', data:b64}}));
+      content.push({type:'text', text: promptTxt});
+      const payloadStr = JSON.stringify({ model:'claude-sonnet-4-5', max_tokens:4000, messages:[{role:'user', content}] });
+      const payloadMo = (payloadStr.length/1024/1024).toFixed(2);
+      try {
+        r = await fetch('/api/ia', {
+          method:'POST', headers:{'Content-Type':'application/json'},
+          body: payloadStr
+        });
+      } catch(netErr){ lastErr = 'Réseau : '+((netErr&&netErr.message)||''); r=null; continue; }
+      raw = await r.text();
+      const tooBig = (r.status===413) || /too large|entity too large|payload/i.test(raw);
+      if(tooBig && i < plan.length-1){ lastErr='413 — payload '+payloadMo+' Mo'; continue; } // réessaie plus compressé
+      if(!r.ok){ lastErr = 'HTTP '+r.status+' — payload '+payloadMo+' Mo'; }
+      break; // succès, ou échec non lié à la taille, ou dernier palier atteint
+    }
+    if(!r) throw new Error(lastErr || 'Service de lecture injoignable');
+    if(!r.ok){
+      if(r.status===413 || /too large|entity too large|payload/i.test(raw||'')){
+        throw new Error('Bilan trop volumineux même après compression ('+(lastErr||'')+'). Le souci vient probablement de la limite de /api/ia. Envoie-moi le PDF dans le chat, ou montre-moi api/ia.js pour relever la limite.');
+      }
+      throw new Error('Service de lecture indisponible (HTTP '+r.status+')');
+    }
+    let data;
+    try { data = JSON.parse(raw); }
+    catch(e){ throw new Error('Réponse du service illisible (pas du JSON)'); }
     // Récupère le texte renvoyé par l'IA
     let txt = '';
     if(Array.isArray(data.content)) txt = data.content.filter(b=>b.type==='text').map(b=>b.text).join('\n');
     const clean = txt.replace(/```json|```/g,'').trim();
     let fin = null;
-    try { fin = JSON.parse(clean); } catch(e){ throw new Error('Réponse IA illisible'); }
+    try { fin = JSON.parse(clean); } catch(e){ throw new Error('Chiffres non exploitables (réponse IA non-JSON)'); }
     fin = completerCC(fin); // calcule les totaux CC si l'IA ne les a pas agrégés
     // Année RÉELLE lue dans le bilan (date de clôture), pas le menu déroulant
     let realYear = parseInt(year);
