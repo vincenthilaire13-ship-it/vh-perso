@@ -230,7 +230,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:14
 <div id="tab-dashboard" class="panel active">
   <div style="display:flex;justify-content:flex-end;margin-bottom:10px;">
     <span id="maj-badge" style="display:inline-flex;align-items:center;gap:6px;background:var(--success-l);color:var(--success);font-size:11px;font-weight:600;font-family:var(--mono);padding:4px 11px;border-radius:20px;border:1px solid rgba(22,101,52,0.2);">
-      <span style="font-size:9px;">●</span> Mis à jour le vendredi 12 juin 2026 à 09h58
+      <span style="font-size:9px;">●</span> Mis à jour le vendredi 12 juin 2026 à 10h01
     </span>
   </div>
   <!-- Optimisation panel toujours visible -->
@@ -2951,6 +2951,10 @@ function socImpRow(list, d) {
   const dl = d.url ? `<a href="${d.url}" target="_blank" class="btn" style="font-size:11px;padding:3px 9px;">Ouvrir</a>` : '';
   const safePath = (d.dropbox_path||'').replace(/'/g,"");
   const safeDoc = (d.doctype||'').replace(/'/g,"");
+  // Bouton « Relire » : re-lance l'extraction IA sur le PDF déjà stocké dans Dropbox
+  // (utile pour combler les champs qu'un import précédent avait ratés).
+  const isBilanPdf = /bilan/i.test(d.doctype||'') && (d.type||'').toUpperCase()==='PDF';
+  const relire = (d.id && isBilanPdf && d.dropbox_path) ? `<button class="btn" style="font-size:11px;padding:3px 9px;" onclick="socImpRelire(this,'${d.id}','${safePath}','${d.societe||''}','${d.exercice||''}','${safeDoc}')">🔄 Relire</button>` : '';
   const del = d.id ? `<button class="btn" style="font-size:11px;padding:3px 9px;" onclick="socImpDelete(this,'${d.id}','${safePath}','${d.societe||''}','${d.exercice||''}','${safeDoc}')">Suppr.</button>` : '';
   // Sélecteur d'exercice éditable : permet de re-ranger le fichier sur la bonne année
   // (déplace dans Dropbox + met à jour l'index), même si l'IA n'a pas pu lire le bilan.
@@ -2963,7 +2967,7 @@ function socImpRow(list, d) {
   }
   row.innerHTML = `<div class="fext ${ext==='CSV'?'csv':''}">${ext}</div>
 <div class="finfo"><div class="fname">${d.nom}</div><div class="fmeta" style="display:flex;align-items:center;gap:6px;">${d.doctype||''} · ${yearSel}</div></div>
-<div style="display:flex;gap:6px;align-items:center;">${dl}${del}<span class="fst ${d.statut==='archive'?'fst-ok':'fst-p'}">${d.statut==='archive'?'Dropbox ✓':(d.statut==='up'?'…':'')}</span></div>`;
+<div style="display:flex;gap:6px;align-items:center;">${dl}${relire}${del}<span class="fst ${d.statut==='archive'?'fst-ok':'fst-p'}">${d.statut==='archive'?'Dropbox ✓':(d.statut==='up'?'…':'')}</span></div>`;
   list.prepend(row);
   return row;
 }
@@ -3000,7 +3004,31 @@ async function socImpReclasse(sel, id, dropbox_path, soc, doctype) {
   const box = sel.closest('.socimp'); if(box) socImpRender(box);
 }
 
-// Affiche les fichiers déjà importés d'une société
+// Relit un bilan déjà archivé : télécharge le PDF depuis Dropbox et relance
+// l'extraction IA pour combler les champs manquants (CC, résultat fiscal, etc.).
+async function socImpRelire(btn, id, dropbox_path, soc, exercice, doctype) {
+  const box = btn.closest('.socimp'); if(!box) return;
+  const old = btn.textContent; btn.textContent='…'; btn.disabled=true;
+  try {
+    const tok = await dbxToken();
+    const dlr = await fetch('https://content.dropboxapi.com/2/files/download', {
+      method:'POST', headers:{'Authorization':'Bearer '+tok,'Dropbox-API-Arg':JSON.stringify({path:dropbox_path})}
+    });
+    if(!dlr.ok) throw new Error('Téléchargement Dropbox impossible');
+    const blob = await dlr.blob();
+    const fname = dropbox_path.split('/').pop() || 'bilan.pdf';
+    const file = new File([blob], fname, {type:'application/pdf'});
+    const folder = IS_SOC_FOLDER[soc] || soc;
+    const ext = (fname.split('.').pop()||'pdf').toLowerCase();
+    const dateStr = new Date().toISOString().slice(0,10);
+    // On relance l'extraction. ctx.docId permet de re-ranger si l'année lue diffère.
+    await extraireBilanIA(box, file, soc, exercice, null, {docId:id, dropbox_path, folder, doctype:doctype||'Bilan', dateStr, ext});
+    renderSocFinances(soc);
+  } catch(e) {
+    alert('Relecture impossible : '+((e&&e.message)||'')+'. Tu peux réimporter le bilan via le bloc ci-dessus.');
+  }
+  btn.textContent=old; btn.disabled=false;
+}
 async function socImpRender(box) {
   const soc = box.dataset.soc;
   const list = box.querySelector('.si-list');
@@ -3231,14 +3259,30 @@ Pour comptes_courants_detail : "actif" = la société liée DOIT de l'argent à 
     const clean = txt.replace(/```json|```/g,'').trim();
     let fin = null;
     try { fin = JSON.parse(clean); } catch(e){ throw new Error('Réponse IA illisible'); }
+    fin = completerCC(fin); // calcule les totaux CC si l'IA ne les a pas agrégés
     // Année RÉELLE lue dans le bilan (date de clôture), pas le menu déroulant
     let realYear = parseInt(year);
     const dc = (fin.date_cloture||'').match(/(\d{4})/g);
     if(dc && dc.length){ const y = parseInt(dc[dc.length-1]); if(y>=2015 && y<=2035) realYear = y; }
-    // Enregistre dans societe_finances (clé société+exercice = année réelle du bilan)
+    // Enregistre dans societe_finances (clé société+exercice = année réelle du bilan).
+    // Fusion non destructive : on conserve toute valeur déjà connue qu'une relecture
+    // renverrait à null (la relecture ne doit que COMPLÉTER, jamais effacer).
     try {
+      let merged = fin;
+      try {
+        const {data:prev} = await sb.from('societe_finances').select('donnees').eq('societe',soc).eq('exercice',realYear).maybeSingle();
+        if(prev && prev.donnees){
+          merged = Object.assign({}, prev.donnees);
+          Object.keys(fin).forEach(k=>{
+            const v = fin[k];
+            const vide = v==null || (Array.isArray(v) && v.length===0);
+            if(!vide) merged[k] = v; // n'écrase qu'avec une vraie valeur
+          });
+          merged = completerCC(merged);
+        }
+      } catch(e){}
       await sb.from('societe_finances').upsert({
-        societe: soc, exercice: realYear, donnees: fin, updated_at: new Date().toISOString()
+        societe: soc, exercice: realYear, donnees: merged, updated_at: new Date().toISOString()
       }, { onConflict: 'societe,exercice' });
     } catch(e){}
     // Si l'année réelle diffère du menu : on RANGE le fichier dans la bonne année
@@ -3371,11 +3415,34 @@ const FIN_LABELS = [
 ];
 const eurF = n => (n===0)?'0€':(n!=null && !isNaN(n))?Math.round(n).toLocaleString('fr-FR')+'€':'—';
 
+// Complète les totaux de comptes courants à partir du détail ligne par ligne quand
+// l'IA ne les a pas agrégés. Garantit que l'historique n'a pas de trous alors que
+// l'info existe (le détail est lu mais les totaux cc_*_total étaient parfois null).
+function completerCC(d){
+  if(!d || typeof d!=='object') return d;
+  const det = Array.isArray(d.comptes_courants_detail) ? d.comptes_courants_detail : [];
+  if(det.length){
+    let actif=0, passif=0, hasA=false, hasP=false;
+    det.forEach(cc=>{
+      const m = Number(cc.montant);
+      if(isNaN(m)) return;
+      const sens=(cc.sens||'').toLowerCase();
+      if(sens.startsWith('a')){ actif+=Math.abs(m); hasA=true; }
+      else if(sens.startsWith('p')){ passif+=Math.abs(m); hasP=true; }
+    });
+    if((d.cc_groupe_actif_total==null) && hasA) d.cc_groupe_actif_total = actif;
+    if((d.cc_associes_passif_total==null) && hasP) d.cc_associes_passif_total = passif;
+  }
+  return d;
+}
+
 async function renderSocFinances(soc) {
   const zone = document.querySelector('.fin-zone[data-soc="'+soc+'"]');
   if(!zone) return;
   let rows = [];
   try { const {data}=await sb.from('societe_finances').select('*').eq('societe',soc).order('exercice',{ascending:false}); rows=data||[]; } catch(e){}
+  // Complète les totaux CC manquants (dérivés du détail) pour chaque exercice
+  rows.forEach(r => { if(r && r.donnees) r.donnees = completerCC(r.donnees); });
   if(!rows.length){
     // Plus aucun chiffre extrait : on remet le message d'attente (évite données orphelines)
     if(/Chiffres extraits automatiquement/.test(zone.innerHTML)) {
