@@ -229,7 +229,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:14
 <div id="tab-dashboard" class="panel active">
   <div style="display:flex;justify-content:flex-end;margin-bottom:10px;">
     <span id="maj-badge" style="display:inline-flex;align-items:center;gap:6px;background:var(--success-l);color:var(--success);font-size:11px;font-weight:600;font-family:var(--mono);padding:4px 11px;border-radius:20px;border:1px solid rgba(22,101,52,0.2);">
-      <span style="font-size:9px;">●</span> Mis à jour le vendredi 12 juin 2026 à 09h24
+      <span style="font-size:9px;">●</span> Mis à jour le vendredi 12 juin 2026 à 09h44
     </span>
   </div>
   <!-- Optimisation panel toujours visible -->
@@ -2807,7 +2807,7 @@ function buildSocImports() {
         <div class="alert a-b" style="margin-bottom:12px;"><span>💡</span><div>Dépose ici les documents de <strong>${IS_SOC_LABEL[soc]||'cette société'}</strong> par exercice : <strong>bilan</strong> et <strong>PV d'Assemblée Générale</strong> (+ liasse, FEC…). La frise ci-dessus passe en vert quand le bilan ET le PV d'AG sont reçus pour une année. Rangés dans Dropbox « Fiscal Vincent » en <code>/${IS_SOC_FOLDER[soc]||soc}/Exercice/</code>. Envoie-les aussi dans le chat pour que je les analyse.</div></div>
         <div class="g2" style="margin-bottom:12px;">
           <div class="sim-row" style="flex-direction:column;align-items:stretch;gap:4px;">
-            <label style="width:auto;">Exercice</label>
+            <label style="width:auto;">Exercice <span style="font-weight:400;color:var(--text3);font-size:11px;">(auto-détecté pour les bilans)</span></label>
             <select class="sim-in si-year" style="width:100%;font-family:var(--font);">${socImpYears()}</select>
           </div>
           <div class="sim-row" style="flex-direction:column;align-items:stretch;gap:4px;">
@@ -2926,12 +2926,14 @@ async function socImpRender(box) {
     else docs = res.data || [];
   } catch(e){ readErr = (e&&e.message)||'exception'; }
   const byYear={}; docs.forEach(d=>{(byYear[d.exercice]=byYear[d.exercice]||[]).push(d);});
-  // Frise des exercices 2023 → futurs : statut bilan + PV d'AG par année
+  // Frise : exercices avec bilan + l'exercice en cours (pas d'années futures vides)
   if(frise) {
     const now = new Date().getFullYear();
     let html = '';
-    const top = Math.max(now+2, 2028);
-    for(let y=top; y>=2023; y--) {
+    const annees = Object.keys(byYear).map(Number);
+    const top = Math.max(now, ...(annees.length?annees:[now]));
+    const bottom = Math.min(2023, ...(annees.length?annees:[2023]));
+    for(let y=top; y>=bottom; y--) {
       const items = byYear[y] || [];
       const hasBilan = items.some(d => /bilan|compte de r|liasse|fec|grand livre|balance/i.test(d.doctype||''));
       const hasAG = items.some(d => /assembl|pv|a\.?g\.?/i.test(d.doctype||''));
@@ -3128,14 +3130,18 @@ Pour comptes_courants_detail : "actif" = la société liée DOIT de l'argent à 
     const clean = txt.replace(/```json|```/g,'').trim();
     let fin = null;
     try { fin = JSON.parse(clean); } catch(e){ throw new Error('Réponse IA illisible'); }
-    // Enregistre dans societe_finances (clé société+exercice)
+    // Année RÉELLE lue dans le bilan (date de clôture), pas le menu déroulant
+    let realYear = parseInt(year);
+    const dc = (fin.date_cloture||'').match(/(\d{4})/g);
+    if(dc && dc.length){ const y = parseInt(dc[dc.length-1]); if(y>=2015 && y<=2035) realYear = y; }
+    // Enregistre dans societe_finances (clé société+exercice = année réelle du bilan)
     try {
       await sb.from('societe_finances').upsert({
-        societe: soc, exercice: parseInt(year), donnees: fin, updated_at: new Date().toISOString()
+        societe: soc, exercice: realYear, donnees: fin, updated_at: new Date().toISOString()
       }, { onConflict: 'societe,exercice' });
     } catch(e){}
     note.style.color='var(--success)';
-    note.innerHTML = '✓ Bilan lu automatiquement — résultat net : <strong>'+(fin.resultat_net!=null?Math.round(fin.resultat_net).toLocaleString('fr-FR')+'€':'n.c.')+'</strong>, capitaux propres : <strong>'+(fin.capitaux_propres!=null?Math.round(fin.capitaux_propres).toLocaleString('fr-FR')+'€':'n.c.')+'</strong>';
+    note.innerHTML = '✓ Bilan <strong>'+realYear+'</strong> lu automatiquement'+(realYear!==parseInt(year)?' (rangé en '+realYear+' d\'après la date du bilan)':'')+' — résultat net : <strong>'+(fin.resultat_net!=null?Math.round(fin.resultat_net).toLocaleString('fr-FR')+'€':'n.c.')+'</strong>, capitaux propres : <strong>'+(fin.capitaux_propres!=null?Math.round(fin.capitaux_propres).toLocaleString('fr-FR')+'€':'n.c.')+'</strong>';
     renderSocFinances(soc);
   } catch(e) {
     note.style.color='var(--warn)';
@@ -3144,6 +3150,50 @@ Pour comptes_courants_detail : "actif" = la société liée DOIT de l'argent à 
 }
 
 // ── AFFICHAGE DES CHIFFRES EXTRAITS (dernier exercice en grand + historique) ──
+// Glossaire d'explications simples pour le bouton ⓘ
+const FIN_INFO = {
+  chiffre_affaires:"Tout l'argent encaissé grâce aux ventes sur l'année, AVANT de payer les charges, salaires et impôts.",
+  resultat_exploitation:"Ce qui reste du chiffre d'affaires après avoir payé les charges du métier (achats, salaires, loyer…). C'est le bénéfice de l'activité elle-même.",
+  resultat_financier:"Le résultat lié à l'argent : intérêts reçus moins intérêts payés (emprunts, comptes courants).",
+  resultat_courant:"Résultat d'exploitation + résultat financier, avant les éléments exceptionnels et l'impôt.",
+  resultat_net:"Le VRAI bénéfice final, une fois TOUT payé (charges, intérêts, impôts). C'est ce qui reste réellement à la société.",
+  resultat_fiscal:"Le bénéfice recalculé selon les règles des impôts (différent du bénéfice comptable). C'est sur lui qu'on calcule l'impôt sur les sociétés.",
+  ebe:"Excédent Brut d'Exploitation : l'argent dégagé par l'activité avant amortissements. Dit si le métier gagne de l'argent.",
+  capital_social:"L'argent de départ mis par les associés pour créer la société.",
+  reserve_legale:"Une part du bénéfice que la loi oblige à mettre de côté chaque année (jusqu'à 10% du capital).",
+  report_a_nouveau:"Les bénéfices des années passées NON distribués et NON mis en réserve : ils s'accumulent ici.",
+  autres_reserves:"Bénéfices passés volontairement gardés dans la société (non distribués).",
+  capitaux_propres:"Ce que la société possède vraiment en propre : capital + réserves + bénéfices accumulés. C'est sa 'valeur' pour les associés.",
+  total_bilan:"La taille totale de la société : tout ce qu'elle possède d'un côté, tout ce qu'elle doit de l'autre. Les deux côtés s'équilibrent.",
+  tresorerie:"L'argent réellement disponible en banque et en caisse, tout de suite.",
+  dettes_financieres:"L'argent que la société doit aux banques (emprunts, crédits).",
+  dettes_fournisseurs:"L'argent que la société doit à ses fournisseurs (factures pas encore payées).",
+  dividendes_verses:"La part du bénéfice distribuée aux associés / à la holding. C'est l'argent qui SORT vers les propriétaires.",
+  dividendes_recus_filiales:"Les dividendes que la société a REÇUS de ses propres filiales.",
+  cc_associes_passif_total:"Argent prêté par les associés ou le groupe À la société. La société devra le rembourser.",
+  cc_associe_dirigeant:"Argent que toi, le dirigeant, as prêté personnellement à la société (ton compte courant d'associé).",
+  cc_groupe_actif_total:"Argent que la société a PRÊTÉ au groupe ou à d'autres sociétés. On le lui doit."
+};
+function finInfo(key){
+  const txt = FIN_INFO[key] || '';
+  let pop = document.getElementById('finpop');
+  if(!pop){
+    pop = document.createElement('div');
+    pop.id = 'finpop';
+    pop.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:9999;padding:24px;';
+    pop.onclick = ()=>{ pop.style.display='none'; };
+    pop.innerHTML = '<div style="background:var(--surface,#fff);max-width:380px;border-radius:14px;padding:20px 22px;box-shadow:0 10px 40px rgba(0,0,0,.3);" onclick="event.stopPropagation()"><div id="finpop-txt" style="font-size:14px;line-height:1.5;color:var(--text,#111);"></div><button onclick="document.getElementById(\'finpop\').style.display=\'none\'" style="margin-top:16px;width:100%;padding:10px;border:none;border-radius:8px;background:var(--accent,#2563eb);color:#fff;font-weight:600;cursor:pointer;">Compris</button></div>';
+    document.body.appendChild(pop);
+  }
+  document.getElementById('finpop-txt').textContent = txt;
+  pop.style.display = 'flex';
+}
+// Libellé suivi d'un petit ⓘ cliquable
+function lblI(lab,key){
+  if(!FIN_INFO[key]) return lab;
+  return `${lab} <span onclick="finInfo('${key}')" style="display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:50%;background:var(--accent,#2563eb);color:#fff;font-size:10px;font-style:italic;font-weight:700;cursor:pointer;margin-left:4px;vertical-align:middle;">i</span>`;
+}
+
 const FIN_LABELS = [
   ['chiffre_affaires',"Chiffre d'affaires"],['resultat_exploitation',"Résultat d'exploitation"],
   ['resultat_financier','Résultat financier'],['resultat_courant','Résultat courant'],
@@ -3172,23 +3222,42 @@ async function renderSocFinances(soc) {
   let html = `<div class="alert a-g" style="margin-bottom:12px;"><span>✓</span><div>Chiffres extraits automatiquement du bilan <strong>${d.date_cloture||('exercice '+last.exercice)}</strong>. ${rows.length>1?('Historique sur '+rows.length+' exercices ci-dessous.'):''}</div></div>`;
   html += `<div class="g4">${kpi('Résultat net',d.resultat_net,'acc')}${kpi('Capitaux propres',d.capitaux_propres)}${kpi("Chiffre d'affaires",d.chiffre_affaires)}${kpi('Trésorerie',d.tresorerie,'war')}</div>`;
 
+  // Encarts explicatifs en langage simple
+  const nomSoc = IS_SOC_LABEL[soc] || 'cette société';
+  // Trésorerie
+  if(d.tresorerie!=null){
+    html += `<div class="alert a-b" style="margin-bottom:10px;"><span>💶</span><div><strong>Trésorerie : ${eurF(d.tresorerie)}</strong> — c'est l'argent réellement disponible sur les comptes bancaires de ${nomSoc} au ${d.date_cloture||('31/12/'+last.exercice)}. C'est l'argent que la société a « en caisse », pas son bénéfice.</div></div>`;
+  }
+  // Dividendes / remontée vers la holding
+  let divTxt;
+  if(d.dividendes_verses && d.dividendes_verses>0){
+    divTxt = `<strong>${nomSoc} a versé ${eurF(d.dividendes_verses)} de dividendes</strong>. Cet argent remonte vers la holding VH Company (qui détient la société). C'est ce que la société a « fait remonter » à la mère sur cet exercice.`;
+  } else {
+    divTxt = `<strong>${nomSoc} n'a versé aucun dividende cet exercice.</strong> Le bénéfice (${eurF(d.resultat_net)}) a été conservé dans la société (mis en réserves / report à nouveau), il n'est pas remonté à la holding VH Company. Pour distribuer un dividende, il faut une décision d'Assemblée Générale (le PV d'AG).`;
+  }
+  html += `<div class="alert a-w" style="margin-bottom:12px;"><span>⬆️</span><div>${divTxt}</div></div>`;
+
   // Compte de résultat + structure (dernier exercice)
   html += `<div class="g2"><div class="card"><div class="card-title">Compte de résultat ${last.exercice}</div>`;
   [['chiffre_affaires',"Chiffre d'affaires"],['resultat_exploitation',"Résultat d'exploitation"],['resultat_financier','Résultat financier'],['resultat_courant','Résultat courant'],['ebe','EBE'],['resultat_net','Résultat net'],['resultat_fiscal','Résultat fiscal']].forEach(([k,lab])=>{
-    if(d[k]!=null){ const neg=d[k]<0; html+=`<div class="row"><span class="rl">${lab}</span><span class="rv ${neg?'r':(k.includes('resultat')?'g':'')}">${eurF(d[k])}</span></div>`; }
+    if(d[k]!=null){ const neg=d[k]<0; html+=`<div class="row"><span class="rl">${lblI(lab,k)}</span><span class="rv ${neg?'r':(k.includes('resultat')?'g':'')}">${eurF(d[k])}</span></div>`; }
   });
   html += `</div><div class="card"><div class="card-title">Structure & capitaux</div>`;
   [['capital_social','Capital social'],['reserve_legale','Réserve légale'],['report_a_nouveau','Report à nouveau'],['autres_reserves','Autres réserves'],['capitaux_propres','Capitaux propres'],['total_bilan','Total bilan'],['dettes_financieres','Dettes financières'],['dividendes_verses','Dividendes versés']].forEach(([k,lab])=>{
-    if(d[k]!=null){ html+=`<div class="row"><span class="rl">${lab}</span><span class="rv ${k==='capitaux_propres'?'g':''}">${eurF(d[k])}</span></div>`; }
+    if(d[k]!=null){ html+=`<div class="row"><span class="rl">${lblI(lab,k)}</span><span class="rv ${k==='capitaux_propres'?'g':''}">${eurF(d[k])}</span></div>`; }
   });
   html += `</div></div>`;
 
-  // Comptes courants détaillés (qui doit à qui)
+  // Comptes courants détaillés (qui doit à qui) — langage clair
   if(Array.isArray(d.comptes_courants_detail) && d.comptes_courants_detail.length){
-    html += `<div class="card"><div class="card-title">🔄 Comptes courants au ${d.date_cloture||last.exercice} — qui doit à qui</div><table class="tbl"><thead><tr><th>Compte</th><th>Sens</th><th class="r">Montant</th></tr></thead><tbody>`;
+    html += `<div class="card"><div class="card-title">🔄 Prêts entre sociétés au ${d.date_cloture||last.exercice} — qui doit de l'argent à qui</div>`;
+    html += `<div class="alert a-b" style="margin-bottom:10px;"><span>💡</span><div>Un compte courant = de l'argent prêté entre sociétés, qui devra être remboursé. <span style="color:var(--success);font-weight:600;">Vert</span> = on doit de l'argent à ${nomSoc} (${nomSoc} a prêté). <span style="color:var(--warn);font-weight:600;">Orange</span> = ${nomSoc} doit de l'argent (elle a reçu un prêt).</div></div>`;
+    html += `<table class="tbl"><thead><tr><th>Avec qui</th><th>Situation</th><th class="r">Montant</th></tr></thead><tbody>`;
     d.comptes_courants_detail.forEach(cc=>{
       const actif = (cc.sens||'').toLowerCase().startsWith('a');
-      const tag = actif ? '<span class="tag tag-g">Créance (on doit à cette société)</span>' : '<span class="tag tag-w">Dette (cette société doit)</span>';
+      const tag = actif
+        ? `<span class="tag tag-g">${cc.nom||'?'} doit à ${nomSoc}</span>`
+        : `<span class="tag tag-w">${nomSoc} doit à ${cc.nom||'?'}</span>`;
       html += `<tr><td><strong>${cc.nom||'—'}</strong></td><td>${tag}</td><td class="r">${eurF(cc.montant)}</td></tr>`;
     });
     html += `</tbody></table></div>`;
@@ -3201,7 +3270,7 @@ async function renderSocFinances(soc) {
     FIN_LABELS.forEach(([k,lab])=>{
       const vals = cols.map(r=>(r.donnees||{})[k]);
       if(vals.some(v=>v!=null)){
-        html += `<tr><td>${lab}</td>${vals.map(v=>'<td class="r">'+eurF(v)+'</td>').join('')}</tr>`;
+        html += `<tr><td>${lblI(lab,k)}</td>${vals.map(v=>'<td class="r">'+eurF(v)+'</td>').join('')}</tr>`;
       }
     });
     html += `</tbody></table></div></div>`;
