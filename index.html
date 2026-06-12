@@ -232,7 +232,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:14
 <div id="tab-dashboard" class="panel active">
   <div style="display:flex;justify-content:flex-end;margin-bottom:10px;">
     <span id="maj-badge" style="display:inline-flex;align-items:center;gap:6px;background:var(--success-l);color:var(--success);font-size:11px;font-weight:600;font-family:var(--mono);padding:4px 11px;border-radius:20px;border:1px solid rgba(22,101,52,0.2);">
-      <span style="font-size:9px;">●</span> Mis à jour le vendredi 12 juin 2026 à 17h32
+      <span style="font-size:9px;">●</span> Mis à jour le vendredi 12 juin 2026 à 17h44
     </span>
   </div>
   <!-- Optimisation panel toujours visible -->
@@ -899,7 +899,8 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:14
 
     <!-- Sous-onglets du dossier -->
     <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;border-bottom:1px solid var(--border);padding-bottom:8px;">
-      <button class="btn bat-sub active" data-sub="acq" onclick="batSub('acq')">🏠 Acquisition & notaire</button>
+      <button class="btn bat-sub active" data-sub="vue" onclick="batSub('vue')">📊 Vue d'ensemble</button>
+      <button class="btn bat-sub" data-sub="acq" onclick="batSub('acq')">🏠 Acquisition & notaire</button>
       <button class="btn bat-sub" data-sub="pret" onclick="batSub('pret')">🏦 Prêt bancaire</button>
       <button class="btn bat-sub" data-sub="bail" onclick="batSub('bail')">📄 Locataire & bail</button>
       <button class="btn bat-sub" data-sub="caution" onclick="batSub('caution')">🛡 Cautionnement</button>
@@ -912,7 +913,8 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:14
       <button class="btn bat-sub" data-sub="docs" onclick="batSub('docs')">📎 Autres documents</button>
     </div>
 
-    <div id="bat-sub-acq" class="bat-pane"></div>
+    <div id="bat-sub-vue" class="bat-pane"></div>
+    <div id="bat-sub-acq" class="bat-pane" style="display:none;"></div>
     <div id="bat-sub-pret" class="bat-pane" style="display:none;"></div>
     <div id="bat-sub-bail" class="bat-pane" style="display:none;"></div>
     <div id="bat-sub-caution" class="bat-pane" style="display:none;"></div>
@@ -1250,7 +1252,7 @@ function openBatDetail(id) {
   document.getElementById('bat-detail-view').style.display='block';
   document.getElementById('bat-d-name').textContent = b.nom;
   document.getElementById('bat-d-sub').textContent = (b.adresse||'') + (b.type_local?' · '+b.type_local:'');
-  batSub('acq');
+  batSub('vue');
 }
 function closeBatDetail() {
   document.getElementById('bat-detail-view').style.display='none';
@@ -1273,7 +1275,7 @@ function batSub(key) {
   const pane = document.getElementById('bat-sub-'+key);
   if(pane) pane.style.display='block';
   const b = batiments.find(x=>x.id===currentBat); if(!b) return;
-  ({acq:renderAcq, pret:renderPret, bail:renderBail, caution:renderCaution, edl:renderEdl, diag:renderDiag, assur:renderAssur, factu:renderFactu, taxe:renderTaxe, syndic:renderSyndic, docs:renderDocs}[key])(b);
+  ({vue:renderVue, acq:renderAcq, pret:renderPret, bail:renderBail, caution:renderCaution, edl:renderEdl, diag:renderDiag, assur:renderAssur, factu:renderFactu, taxe:renderTaxe, syndic:renderSyndic, docs:renderDocs}[key])(b);
 }
 
 // petit utilitaire de champ formulaire
@@ -1309,6 +1311,66 @@ async function saveAcq() {
     etude:v('acq-etude'), ref:v('acq-ref'), valeur:numOrNull(v('acq-valeur')), notes:v('acq-notes') };
   await saveBatToDb(b); recomputeBat();
   flash('acq');
+}
+
+// ===== VUE D'ENSEMBLE DU BÂTIMENT (rapporte vs coûte) =====
+function renderVue(b){
+  const an = v => (v!=null && !isNaN(v)) ? Number(v) : 0;
+  const loyerMensuel = an(b.bail && b.bail.loyer_mensuel);
+  const loyerAnnuel = loyerMensuel * 12;
+  const mensPret = (b.prets||[]).reduce((s,p)=>s+an(p.mensualite),0);
+  const pretAnnuel = mensPret * 12;
+  const taxes = (b.taxes||[]).slice().sort((x,y)=>an(y.annee)-an(x.annee));
+  const derniereTaxe = taxes[0];
+  const taxeMontant = derniereTaxe ? an(derniereTaxe.montant) : 0;
+  const taxeRefac = derniereTaxe ? !!derniereTaxe.refacturee : false;
+  const taxeACharge = taxeRefac ? 0 : taxeMontant;
+  const appels = (b.syndic && b.syndic.appels) || [];
+  let syndicAnneeMax = null;
+  appels.forEach(a=>{ let y=a.annee; if(y==null){const m=String(a.periode||a.echeance||a.date||'').match(/(20\d{2})/); if(m)y=+m[1];} if(y!=null && (syndicAnneeMax==null||y>syndicAnneeMax)) syndicAnneeMax=y; });
+  const syndicACharge = appels.filter(a=>{ let y=a.annee; if(y==null){const m=String(a.periode||a.echeance||a.date||'').match(/(20\d{2})/); if(m)y=+m[1];} return (syndicAnneeMax==null||y==syndicAnneeMax) && !a.refacture; }).reduce((s,a)=>s+an(a.montant),0);
+  const syndicTotalToutes = appels.reduce((s,a)=>s+an(a.montant),0);
+  const assurDocs = (b.docs||[]).filter(d=>d.cat==='assur' && d.extrait && d.extrait.prime_annuelle!=null);
+  const assurPrime = assurDocs.length ? an(assurDocs[assurDocs.length-1].extrait.prime_annuelle) : 0;
+
+  const coutAnnuel = pretAnnuel + taxeACharge + syndicACharge + assurPrime;
+  const solde = loyerAnnuel - coutAnnuel;
+  const positif = solde >= 0;
+  const finPret = (b.prets||[]).map(p=>p.fin).filter(Boolean).join(' · ') || '—';
+  const crdTotal = (b.prets||[]).reduce((s,p)=>s+an(p.crd),0);
+
+  const manques = [];
+  if(!loyerMensuel) manques.push('loyer (onglet Bail)');
+  if(!mensPret && !(b.prets||[]).length) manques.push('prêt (onglet Prêt)');
+  if(!taxeMontant) manques.push('taxe foncière');
+  if(!assurPrime) manques.push('assurance (prime)');
+
+  const ligne = (label, montant, neg, sub) =>
+    `<tr><td>${label}${sub?`<div style="font-size:11px;color:var(--text3);">${sub}</div>`:''}</td><td class="r" style="color:${neg?'var(--danger)':'var(--success)'};font-weight:600;">${neg?'−':'+'}${eurB(Math.abs(montant))}</td></tr>`;
+
+  document.getElementById('bat-sub-vue').innerHTML = `
+  <div class="card">
+    <div class="card-title">📊 ${b.nom} — ce que ce bâtiment rapporte et coûte (par an)</div>
+    <div class="g4" style="margin-bottom:14px;">
+      <div class="kpi suc"><div class="kl">Rapporte / an</div><div class="kv">${eurB(loyerAnnuel)}</div><div class="ks">loyer HC ×12</div></div>
+      <div class="kpi war"><div class="kl">Coûte / an</div><div class="kv">${eurB(coutAnnuel)}</div><div class="ks">prêt + taxe + syndic + assur</div></div>
+      <div class="kpi ${positif?'suc':'acc'}"><div class="kl">${positif?'Gagne / an':'Perd / an'}</div><div class="kv" style="color:${positif?'var(--success)':'var(--danger)'};">${positif?'+':'−'}${eurB(Math.abs(solde))}</div><div class="ks">${positif?'cash-flow positif':'cash-flow négatif'}</div></div>
+      <div class="kpi"><div class="kl">Capital restant dû</div><div class="kv">${eurB(crdTotal)}</div><div class="ks">fin : ${finPret}</div></div>
+    </div>
+    <table class="tbl">
+      <thead><tr><th>Poste annuel</th><th class="r">Montant</th></tr></thead>
+      <tbody>
+        ${ligne('Loyer encaissé (HC)', loyerAnnuel, false, loyerMensuel?eurB(loyerMensuel)+' /mois × 12':'à compléter dans Bail')}
+        ${ligne('Remboursement prêt(s)', pretAnnuel, true, mensPret?eurB(mensPret)+' /mois × 12':'aucun prêt')}
+        ${ligne('Taxe foncière (à ta charge)', taxeACharge, true, derniereTaxe?('année '+(derniereTaxe.annee||'?')+(taxeRefac?' · refacturée au locataire':'')):'à compléter')}
+        ${ligne('Syndic (à ta charge)', syndicACharge, true, syndicAnneeMax?('année '+syndicAnneeMax+' · total toutes années '+eurB(syndicTotalToutes)):'à compléter')}
+        ${ligne('Assurance (prime)', assurPrime, true, assurPrime?'prime annuelle lue':'à compléter dans Assurances')}
+        <tr style="border-top:2px solid var(--border2);"><td style="font-weight:700;">${positif?'Bénéfice':'Déficit'} annuel</td><td class="r" style="font-weight:700;color:${positif?'var(--success)':'var(--danger)'};">${positif?'+':'−'}${eurB(Math.abs(solde))}</td></tr>
+      </tbody>
+    </table>
+    ${manques.length?`<div class="alert a-w" style="margin-top:12px;"><span>⚠</span><div>Pour un calcul complet, il manque : <strong>${manques.join(', ')}</strong>. Dépose les documents dans les onglets correspondants, ils seront lus automatiquement.</div></div>`:`<div class="alert a-g" style="margin-top:12px;"><span>✓</span><div>Tous les postes principaux sont renseignés.</div></div>`}
+    <div style="margin-top:10px;font-size:12px;color:var(--text3);">Note : les charges et la taxe foncière refacturées au locataire sont neutres (encaissées puis reversées) et n'entrent pas dans le coût à ta charge. Le remboursement de prêt inclut capital + intérêts.</div>
+  </div>`;
 }
 
 // ===== CAUTIONNEMENT (documents) =====
@@ -1478,25 +1540,53 @@ async function delTaxe(i) {
 // ===== SYNDIC =====
 function renderSyndic(b) {
   const s = b.syndic;
-  const rows = (s.appels||[]).map((a,i)=>`
-    <tr><td>${a.periode||'—'}</td><td class="r">${eurB(a.montant)}</td><td class="r">${a.date||'—'}</td><td class="r"><span style="cursor:pointer;color:var(--danger);" onclick="delSyndicAppel(${i})">×</span></td></tr>`).join('');
-  const total = (s.appels||[]).reduce((x,a)=>x+(a.montant||0),0);
+  const appels = s.appels||[];
+  // Analyse : total payé, total par année, part refacturable au locataire
+  const total = appels.reduce((x,a)=>x+(Number(a.montant)||0),0);
+  const refac = appels.filter(a=>a.refacture).reduce((x,a)=>x+(Number(a.montant)||0),0);
+  const aTaCharge = total - refac;
+  // Regroupement par année (déduite de l'année explicite, sinon des 4 chiffres de la période/date)
+  const parAnnee = {};
+  appels.forEach(a=>{
+    let y = a.annee;
+    if(y==null){ const m=String(a.periode||a.date||'').match(/(20\d{2})/); if(m) y=m[1]; }
+    y = y||'?';
+    parAnnee[y] = (parAnnee[y]||0) + (Number(a.montant)||0);
+  });
+  const anneesRows = Object.keys(parAnnee).sort((x,y)=>String(y).localeCompare(String(x)))
+    .map(y=>`<tr><td>${y}</td><td class="r">${eurB(parAnnee[y])}</td></tr>`).join('');
+  const rows = appels.map((a,i)=>{
+    const periode = a.periode || a.date || '—';
+    const nature = a.nature ? `<div style="font-size:11px;color:var(--text3);">${a.nature}</div>` : '';
+    const echeance = a.echeance || a.date || '—';
+    const refacTag = a.refacture
+      ? '<span class="tag tag-b" style="cursor:pointer;font-size:10px;" onclick="togSyndicRefac('+i+')">Refacturé locataire</span>'
+      : '<span class="tag tag-gr" style="cursor:pointer;font-size:10px;" onclick="togSyndicRefac('+i+')">À ta charge</span>';
+    return `<tr><td>${periode}${nature}</td><td class="r">${eurB(a.montant)}</td><td class="r">${echeance}</td><td class="r">${refacTag}</td><td class="r"><span style="cursor:pointer;color:var(--danger);" onclick="delSyndicAppel(${i})">×</span></td></tr>`;
+  }).join('');
   document.getElementById('bat-sub-syndic').innerHTML = batDocZone(b,'syndic') + `
   <div class="card">
-    <div class="card-title">👥 Syndic de copropriété</div>
+    <div class="card-title">👥 Syndic — analyse des coûts</div>
+    <div class="g4" style="margin-bottom:12px;">
+      <div class="kpi acc"><div class="kl">Total appels de fonds</div><div class="kv">${eurB(total)}</div><div class="ks">${appels.length} appel${appels.length>1?'s':''}</div></div>
+      <div class="kpi war"><div class="kl">À ta charge</div><div class="kv">${eurB(aTaCharge)}</div><div class="ks">non refacturé</div></div>
+      <div class="kpi suc"><div class="kl">Refacturé locataire</div><div class="kv">${eurB(refac)}</div></div>
+      <div class="kpi"><div class="kl">Quote-part</div><div class="kv" style="font-size:15px;">${s.tantiemes||'—'}</div><div class="ks">millièmes</div></div>
+    </div>
+    ${anneesRows?`<div class="card-title" style="font-size:14px;">Par année</div><table class="tbl" style="margin-bottom:14px;"><thead><tr><th>Année</th><th class="r">Total payé</th></tr></thead><tbody>${anneesRows}</tbody></table>`:''}
     <div style="display:flex;flex-wrap:wrap;gap:12px;">
       ${field('Nom du syndic','s-nom',s.nom,'text')}
       ${field('Contact','s-contact',s.contact,'text','tél / email')}
       ${field('Quote-part (millièmes)','s-tantiemes',s.tantiemes,'text')}
     </div>
     <button class="btn btn-p" style="margin-top:10px;" onclick="saveSyndic()">Enregistrer les infos syndic</button>
-    <div class="card-title" style="margin-top:18px;">Appels de fonds — total ${eurB(total)}</div>
-    <table class="tbl"><thead><tr><th>Période</th><th class="r">Montant</th><th class="r">Date</th><th></th></tr></thead>
-    <tbody>${rows||'<tr><td colspan="4" style="text-align:center;color:var(--text3);padding:12px;">Aucun appel de fonds.</td></tr>'}</tbody></table>
+    <div class="card-title" style="margin-top:18px;">Détail des appels de fonds — total ${eurB(total)}</div>
+    <table class="tbl"><thead><tr><th>Période / nature</th><th class="r">Montant</th><th class="r">Échéance</th><th class="r">Prise en charge</th><th></th></tr></thead>
+    <tbody>${rows||'<tr><td colspan="5" style="text-align:center;color:var(--text3);padding:12px;">Aucun appel de fonds. Dépose un document syndic ci-dessus, il sera lu automatiquement.</td></tr>'}</tbody></table>
     <div style="display:flex;flex-wrap:wrap;gap:12px;margin-top:12px;border-top:1px dashed var(--border);padding-top:12px;">
       ${field('Période','sa-periode','','text','ex : T1 2025')}
       ${field('Montant (€)','sa-montant','','number')}
-      ${field('Date','sa-date','','text')}
+      ${field('Échéance','sa-date','','text')}
     </div>
     <button class="btn btn-p" style="margin-top:10px;" onclick="addSyndicAppel()">+ Ajouter un appel</button>
   </div>`;
@@ -1511,7 +1601,12 @@ async function addSyndicAppel() {
   const b = batiments.find(x=>x.id===currentBat); if(!b) return;
   const v=id=>document.getElementById(id).value;
   if(!v('sa-periode') && !v('sa-montant')) { alert('Renseigne la période ou le montant.'); return; }
-  b.syndic.appels.push({ periode:v('sa-periode'), montant:numOrNull(v('sa-montant')), date:v('sa-date') });
+  b.syndic.appels.push({ periode:v('sa-periode'), montant:numOrNull(v('sa-montant')), echeance:v('sa-date'), refacture:false });
+  await saveBatToDb(b); renderSyndic(b);
+}
+async function togSyndicRefac(i){
+  const b = batiments.find(x=>x.id===currentBat); if(!b) return;
+  b.syndic.appels[i].refacture = !b.syndic.appels[i].refacture;
   await saveBatToDb(b); renderSyndic(b);
 }
 async function delSyndicAppel(i) {
@@ -1863,26 +1958,41 @@ JSON attendu :
 // Lance l'extraction IA d'un PDF bâtiment et renvoie l'objet JSON (ou null).
 // Réutilise /api/ia comme pour les bilans (conversion PDF → images via pdf.js).
 async function batExtractDoc(cat, file, batNom){
-  if((file.name.split('.').pop()||'').toLowerCase()!=='pdf') return null; // IA seulement sur PDF
-  try {
-    const imgs = await pdfToImages(file, 8, {maxWidth:1500, quality:0.72}); // même util que les bilans
-    if(!imgs || !imgs.length) return null;
-    const content = imgs.map(d=>({type:'image', source:{type:'base64', media_type:'image/jpeg', data:d}}));
-    content.push({type:'text', text: batPromptFor(cat, batNom)});
-    const r = await fetch('/api/ia', {
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ model:'claude-sonnet-4-5', max_tokens:1500, messages:[{role:'user', content}] })
-    });
-    if(!r.ok) return null;
-    const j = await r.json();
-    let txt = '';
-    if(j && Array.isArray(j.content)) txt = j.content.filter(c=>c.type==='text').map(c=>c.text).join('\n');
-    else if(j && j.content && j.content[0] && j.content[0].text) txt = j.content[0].text;
-    txt = (txt||'').replace(/```json|```/g,'').trim();
-    const m = txt.match(/\{[\s\S]*\}/);
-    if(!m) return null;
-    return JSON.parse(m[0]);
-  } catch(e){ return null; }
+  if((file.name.split('.').pop()||'').toLowerCase()!=='pdf'){ return {error:'Pas un PDF — lecture auto impossible.'}; }
+  // Paliers : on tente lisible/lourd d'abord, puis on compresse si /api/ia refuse (413/trop gros).
+  const paliers = [
+    {pages:10, maxWidth:1500, quality:0.72},
+    {pages:8,  maxWidth:1200, quality:0.60},
+    {pages:6,  maxWidth:1000, quality:0.50}
+  ];
+  let lastErr = '';
+  for(let i=0;i<paliers.length;i++){
+    const cfg = paliers[i];
+    try {
+      const imgs = await pdfToImages(file, cfg.pages, {maxWidth:cfg.maxWidth, quality:cfg.quality});
+      if(!imgs || !imgs.length){ lastErr='PDF illisible (aucune page rendue).'; continue; }
+      const content = imgs.map(d=>({type:'image', source:{type:'base64', media_type:'image/jpeg', data:d}}));
+      content.push({type:'text', text: batPromptFor(cat, batNom)});
+      const payload = JSON.stringify({ model:'claude-sonnet-4-5', max_tokens:1500, messages:[{role:'user', content}] });
+      const r = await fetch('/api/ia', { method:'POST', headers:{'Content-Type':'application/json'}, body: payload });
+      if(!r.ok){
+        lastErr = 'Serveur IA : HTTP '+r.status;
+        // 413 = trop gros → on tente le palier suivant (plus compressé)
+        if(r.status===413 || r.status===400){ continue; }
+        return {error:lastErr};
+      }
+      const j = await r.json();
+      let txt = '';
+      if(j && Array.isArray(j.content)) txt = j.content.filter(c=>c.type==='text').map(c=>c.text).join('\n');
+      else if(j && j.content && j.content[0] && j.content[0].text) txt = j.content[0].text;
+      txt = (txt||'').replace(/```json|```/g,'').trim();
+      const m = txt.match(/\{[\s\S]*\}/);
+      if(!m){ lastErr='Réponse IA non exploitable.'; continue; }
+      try { return JSON.parse(m[0]); }
+      catch(e){ lastErr='JSON IA invalide.'; continue; }
+    } catch(e){ lastErr=(e&&e.message)||'erreur inconnue'; }
+  }
+  return {error: lastErr || 'Lecture auto impossible.'};
 }
 
 // Construit la zone « documents de cette catégorie » : liste cliquable + dépôt.
@@ -1908,9 +2018,11 @@ function batDocZone(b, cat){
       ? `<a href="${d.url}" target="_blank" rel="noopener" class="btn" style="font-size:11px;padding:3px 9px;">📄 Ouvrir</a>`
       : `<span style="font-size:11px;color:var(--text3);">lien indisponible</span>`;
     const dbxBadge = d.dropbox_path ? `<span class="tag tag-g" style="font-size:10px;">Dropbox ✓</span>` : '';
+    const luBadge = d.extrait ? `<span class="tag tag-g" style="font-size:10px;">✓ lu</span>` : `<span class="tag tag-w" style="font-size:10px;">⚠ non lu</span>`;
+    const relire = d.dropbox_path ? `<button class="btn" style="font-size:11px;padding:3px 9px;" onclick="batDocRelire(${gIdx},'${cat}')">🔄 Relire</button>` : '';
     return `<tr>
-      <td><strong>${titre}</strong>${meta?`<div style="font-size:11px;color:var(--text3);">${meta}</div>`:''}${resume}</td>
-      <td class="r" style="white-space:nowrap;">${dbxBadge} ${ouvrir} <span style="cursor:pointer;color:var(--danger);padding:0 4px;" title="Supprimer" onclick="batDocDelete(${gIdx})">×</span></td>
+      <td><strong>${titre}</strong> ${luBadge}${meta?`<div style="font-size:11px;color:var(--text3);">${meta}</div>`:''}${resume}</td>
+      <td class="r" style="white-space:nowrap;">${dbxBadge} ${ouvrir} ${relire} <span style="cursor:pointer;color:var(--danger);padding:0 4px;" title="Supprimer" onclick="batDocDelete(${gIdx})">×</span></td>
     </tr>`;
   }).join('');
   const zoneId = 'batdrop-'+cat;
@@ -1940,9 +2052,11 @@ async function batDocHandle(cat, files){
     let up;
     try { up = await batUploadDoc(b.nom, cat, f); }
     catch(e){ if(statusEl) statusEl.innerHTML = '<span style="color:var(--danger);">Échec Dropbox : '+((e&&e.message)||'')+'</span>'; continue; }
-    if(statusEl) statusEl.innerHTML = '<span style="color:var(--accent);">🤖 Lecture automatique de '+f.name+'…</span>';
-    let data = null;
-    try { data = await batExtractDoc(cat, f, b.nom); } catch(e){}
+    if(statusEl) statusEl.innerHTML = '<span style="color:var(--accent);">🤖 Lecture automatique de '+f.name+'… (10-30s)</span>';
+    let res = null;
+    try { res = await batExtractDoc(cat, f, b.nom); } catch(e){ res = {error:(e&&e.message)||'erreur'}; }
+    const data = (res && !res.error) ? res : null;
+    const errMsg = (res && res.error) ? res.error : null;
     const doc = {
       cat, nom: up.nom,
       titre: (data && data.titre) ? data.titre : f.name.replace(/\.[^.]+$/,''),
@@ -1958,9 +2072,41 @@ async function batDocHandle(cat, files){
     recomputeBat();
     if(statusEl){
       statusEl.innerHTML = data
-        ? '<span style="color:var(--success);">✓ '+f.name+' ajouté et lu. Champs pré-remplis ci-dessous (vérifie et enregistre).</span>'
-        : '<span style="color:var(--warn);">✓ '+f.name+' ajouté et sauvegardé. Lecture auto indisponible — remplis les champs à la main.</span>';
+        ? '<span style="color:var(--success);">✓ '+f.name+' ajouté et lu. Les champs ci-dessous ont été pré-remplis — vérifie et enregistre.</span>'
+        : '<span style="color:var(--warn);">⚠ '+f.name+' sauvegardé dans Dropbox, mais lecture auto non aboutie'+(errMsg?(' ('+errMsg+')'):'')+'. Utilise « 🔄 Relire » sur le document, ou remplis les champs à la main.</span>';
     }
+  }
+  batSub(cat);
+}
+
+// Relit un document déjà déposé (re-télécharge depuis Dropbox + relance l'IA).
+async function batDocRelire(globalIdx, cat){
+  const b = batiments.find(x=>x.id===currentBat); if(!b) return;
+  const d = (b.docs||[])[globalIdx]; if(!d || !d.dropbox_path){ alert('Document introuvable.'); return; }
+  const statusEl = document.getElementById('batdrop-status-'+cat);
+  if(statusEl) statusEl.innerHTML = '<span style="color:var(--accent);">🤖 Relecture de '+(d.titre||d.nom)+'… (10-30s)</span>';
+  try {
+    const tok = await dbxToken();
+    const dl = await fetch('https://content.dropboxapi.com/2/files/download', {
+      method:'POST', headers:{'Authorization':'Bearer '+tok,'Dropbox-API-Arg':JSON.stringify({path:d.dropbox_path})}
+    });
+    if(!dl.ok) throw new Error('Téléchargement Dropbox impossible');
+    const blob = await dl.blob();
+    const file = new File([blob], d.nom||'doc.pdf', {type:'application/pdf'});
+    const res = await batExtractDoc(cat, file, b.nom);
+    if(res && !res.error){
+      d.extrait = res;
+      d.titre = res.titre || d.titre;
+      d.sous_type = res.type_doc || d.sous_type;
+      d.date_doc = res.date_effet||res.date_achat||res.date_facture||res.date_echeance||res.date_limite_paiement||d.date_doc;
+      batApplyExtract(b, cat, res);
+      await saveBatToDb(b);
+      if(statusEl) statusEl.innerHTML = '<span style="color:var(--success);">✓ Relu. Champs mis à jour.</span>';
+    } else {
+      if(statusEl) statusEl.innerHTML = '<span style="color:var(--danger);">Relecture échouée'+((res&&res.error)?(' ('+res.error+')'):'')+'.</span>';
+    }
+  } catch(e){
+    if(statusEl) statusEl.innerHTML = '<span style="color:var(--danger);">Relecture impossible : '+((e&&e.message)||'')+'</span>';
   }
   batSub(cat);
 }
