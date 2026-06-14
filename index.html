@@ -232,7 +232,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:14
 <div id="tab-dashboard" class="panel active">
   <div style="display:flex;justify-content:flex-end;margin-bottom:10px;">
     <span id="maj-badge" style="display:inline-flex;align-items:center;gap:6px;background:var(--success-l);color:var(--success);font-size:11px;font-weight:600;font-family:var(--mono);padding:4px 11px;border-radius:20px;border:1px solid rgba(22,101,52,0.2);">
-      <span style="font-size:9px;">●</span> <span id="maj-badge-txt">Mis à jour</span>
+      <span style="font-size:9px;">●</span> Mis à jour le vendredi 12 juin 2026 à 22h18
     </span>
   </div>
   <!-- Optimisation panel toujours visible -->
@@ -1022,21 +1022,6 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:14
 const SUPA_URL = 'https://wbhgseotvlipalgmxchy.supabase.co';
 const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndiaGdzZW90dmxpcGFsZ214Y2h5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkyNjI0NTYsImV4cCI6MjA5NDgzODQ1Nn0.LoDkhHH56bFgRYwXAtX4IVb9qyx0_W2NAgzJ0x3Drpg';
 const sb = supabase.createClient(SUPA_URL, SUPA_KEY);
-
-// ── VERSION DE L'APP (à mettre à jour à chaque livraison) ──
-// datetime = heure de France (UTC+2). Le badge "Mis à jour le…" est rempli
-// automatiquement à partir d'ici : plus aucune date écrite en dur dans le HTML.
-const APP_VERSION = { datetime:'2026-06-14T08:43', label:'v14/06-08h43' };
-function applyAppVersion(){
-  const el = document.getElementById('maj-badge-txt');
-  if(!el) return;
-  try {
-    const d = new Date(APP_VERSION.datetime);
-    const txt = d.toLocaleDateString('fr-FR', {weekday:'long', day:'numeric', month:'long', year:'numeric'})
-      + ' à ' + String(d.getHours()).padStart(2,'0') + 'h' + String(d.getMinutes()).padStart(2,'0');
-    el.textContent = 'Mis à jour le ' + txt;
-  } catch(e) { el.textContent = 'Mis à jour'; }
-}
 
 // ── BÂTIMENTS (dossiers patrimoniaux détaillés) ──
 // Chaque bâtiment = 1 enregistrement Supabase (table "batiments") avec des
@@ -1957,26 +1942,27 @@ const DOC_BUCKET = 'documents';
 const DOC_CATS = ['Acte / notaire','Prêt bancaire','Bail','Taxe foncière','Syndic','Facture loyer','Assurance','Autre'];
 
 // ╔══════════════════════════════════════════════════════════════════════╗
-// ║  DROPBOX « Fiscal Vincent » — le SECRET vit côté serveur (/api/dbx).   ║
-// ║  Le navigateur ne voit plus jamais le refresh token : il demande juste ║
-// ║  un access token temporaire à /api/dbx (qui détient le secret via les  ║
-// ║  variables d'environnement Vercel). Renouvellement auto, 0 € de plus.  ║
+// ║  DROPBOX « Fiscal Vincent » — système refresh token (ne périme jamais)║
+// ║  App folder dédiée. Le code régénère l'access token tout seul via le   ║
+// ║  refresh token (comme BK Tech / BK RH). Aucun renouvellement manuel.   ║
 // ╚══════════════════════════════════════════════════════════════════════╝
-const DBX_APP_KEY      = '6kd1aik85onauhp'; // clé publique (non secrète), conservée pour info
+const DBX_APP_KEY      = '6kd1aik85onauhp';
+const DBX_APP_SECRET   = 'g6e5porghtvb3bj';
+const DBX_REFRESH      = 'F6C-8ThwoWAAAAAAAAAAAR_PFhpznojC-BOy_-bb2j5ilVFeD2SOZVkxKfo6DiwJ';
 const DROPBOX_FOLDER   = '/Batiments'; // racine bâtiments dans l'App folder Fiscal Vincent
 const DROPBOX_TOKEN    = 'refresh'; // sentinelle : active l'upload (le vrai token vient de dbxToken())
 
-// Cache de l'access token (valable ~4h) — renouvelé automatiquement via /api/dbx
+// Cache de l'access token (valable ~4h) — renouvelé automatiquement
 let _dbxTok = null, _dbxExp = 0;
 async function dbxToken() {
   const now = Date.now();
   if(_dbxTok && now < _dbxExp - 60000) return _dbxTok; // encore valable
-  const r = await fetch('/api/dbx', { method:'POST', headers:{'Content-Type':'application/json'}, body:'{}' });
-  if(!r.ok){
-    let msg = 'Auth Dropbox échouée ('+r.status+')';
-    try { const j = await r.json(); if(j && j.error) msg = j.error; } catch(e){}
-    throw new Error(msg);
-  }
+  const body = new URLSearchParams({
+    grant_type:'refresh_token', refresh_token:DBX_REFRESH,
+    client_id:DBX_APP_KEY, client_secret:DBX_APP_SECRET
+  });
+  const r = await fetch('https://api.dropboxapi.com/oauth2/token', {method:'POST', body});
+  if(!r.ok) throw new Error('Auth Dropbox échouée ('+r.status+')');
   const j = await r.json();
   _dbxTok = j.access_token;
   _dbxExp = now + (j.expires_in ? j.expires_in*1000 : 14400000);
@@ -2137,9 +2123,6 @@ const BAT_CAT_LABEL = {
 // Envoie un fichier dans Dropbox (catégorie du bâtiment) et renvoie {dropbox_path, url}.
 async function batUploadDoc(batNom, cat, file){
   const tok = await dbxToken();
-  if(!tok || typeof tok !== 'string' || tok.length < 20){
-    throw new Error('Token Dropbox vide ou invalide renvoyé par /api/dbx — vérifie les variables DBX_* sur Vercel.');
-  }
   const clean = s => (s||'').replace(/[\/\\:*?"<>|]/g,'_').trim();
   const catFolder = BAT_CATS[cat] || 'Autres';
   const dateStr = new Date().toISOString().slice(0,10);
@@ -2147,23 +2130,12 @@ async function batUploadDoc(batNom, cat, file){
   const baseName = clean(file.name.replace(/\.[^.]+$/,''));
   const niceName = `${baseName}_${dateStr}.${ext}`;
   const path = `${DROPBOX_FOLDER}/${clean(batNom)}/${catFolder}/${niceName}`;
-  let up;
-  try {
-    up = await fetch('https://content.dropboxapi.com/2/files/upload', {
-      method:'POST',
-      headers:{'Authorization':'Bearer '+tok,'Dropbox-API-Arg':JSON.stringify({path, mode:'add', autorename:true, mute:false}),'Content-Type':'application/octet-stream'},
-      body:file
-    });
-  } catch(netErr){
-    // Une erreur réseau/CORS ici masque presque toujours un refus d'authentification Dropbox
-    throw new Error('Dropbox a refusé la requête (probable token rejeté ou permission « files.content.write » manquante sur l\'app Dropbox). Détail navigateur : '+((netErr&&netErr.message)||'CORS/réseau'));
-  }
-  if(!up.ok){
-    let d=''; try{ d=(await up.json()).error_summary||''; }catch(e){}
-    if(/missing_scope/i.test(d)) throw new Error('Permission manquante sur l\'app Dropbox : il faut activer le scope « files.content.write » (Dropbox App Console → Permissions), puis régénérer le refresh token. ['+d+']');
-    if(/invalid_access_token|expired/i.test(d)) throw new Error('Token Dropbox rejeté/expiré : le refresh token (DBX_REFRESH) n\'est plus valide. ['+d+']');
-    throw new Error(d || ('HTTP '+up.status));
-  }
+  const up = await fetch('https://content.dropboxapi.com/2/files/upload', {
+    method:'POST',
+    headers:{'Authorization':'Bearer '+tok,'Dropbox-API-Arg':JSON.stringify({path, mode:'add', autorename:true, mute:false}),'Content-Type':'application/octet-stream'},
+    body:file
+  });
+  if(!up.ok){ let d=''; try{ d=(await up.json()).error_summary||''; }catch(e){} throw new Error(d||('HTTP '+up.status)); }
   const meta = await up.json();
   const realPath = meta.path_lower || path;
   const url = await dbxShareLink(tok, realPath);
@@ -5131,7 +5103,6 @@ async function renderDashboardGroupe(){
 }
 
 // ── START ──
-applyAppVersion();
 virRefreshAll();
 buildSocImports();
 ['vh','ba','bka','bksj','fvh','sci'].forEach(s=>renderSocFinances(s));
