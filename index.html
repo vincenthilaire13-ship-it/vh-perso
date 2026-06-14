@@ -896,7 +896,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:14
 <div class="treso-app">
 
 <div class="header">
-  <div class="logo"><div class="logo-icon">BK</div>Trésorerie — Groupe Burger King</div>
+  <div class="logo"><div class="logo-icon">VH</div>Trésorerie — Groupe VH</div>
   <div class="nav">
     <button class="nb active" onclick="setPage('dashboard',this)">Tableau de bord</button>
     <button class="nb" onclick="setPage('compare',this)">Comparaison</button>
@@ -947,18 +947,16 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:14
   </div>
 
   <div style="margin-bottom:14px">
-    <label style="font-size:11px;font-weight:700;color:#6b839a;display:block;margin-bottom:6px">RESTAURANT</label>
+    <label style="font-size:11px;font-weight:700;color:#6b839a;display:block;margin-bottom:6px">SOCIÉTÉ / COMPTE</label>
     <select id="pdf-resto" style="width:100%;padding:7px 10px;border:1px solid #dce3ee;border-radius:7px;font-size:13px">
       <option>BK 500</option>
       <option>BK 509</option>
       <option>BK 526</option>
+      <option>VH Company</option>
+      <option>FVH SARL</option>
+      <option>SCI VH Immo</option>
     </select>
-  </div>
-
-  <div style="margin-bottom:14px">
-    <label style="font-size:11px;font-weight:700;color:#6b839a;display:block;margin-bottom:6px">CLÉ API ANTHROPIC</label>
-    <input id="pdf-apikey" type="password" placeholder="sk-ant-..." style="width:100%;padding:7px 10px;border:1px solid #dce3ee;border-radius:7px;font-size:13px;box-sizing:border-box">
-    <div style="font-size:10px;color:#7a90a8;margin-top:3px">Votre clé n'est jamais envoyée ailleurs que vers api.anthropic.com</div>
+    <div style="font-size:10px;color:#7a90a8;margin-top:3px">L'application lit l'IBAN du relevé et range automatiquement. Vérifiez juste que la bonne société est sélectionnée.</div>
   </div>
 
   <div id="pdf-drop" class="pdf-drop" onclick="document.getElementById('pdf-file').click()">
@@ -968,10 +966,12 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:14
     <input id="pdf-file" type="file" accept=".pdf" style="display:none" onchange="pdfSelected(this)">
   </div>
 
+  <div id="pdf-resto-detected" style="display:none;padding:10px 12px;border-radius:8px;margin-bottom:12px;font-size:13px"></div>
+
   <div id="pdf-status" style="display:none;padding:12px;border-radius:8px;margin-bottom:14px;font-size:13px"></div>
 
   <div id="pdf-results" style="display:none">
-    <div style="font-size:13px;font-weight:700;color:#0f1c2e;margin-bottom:10px">Transactions détectées — vérifiez et validez</div>
+    <div style="font-size:13px;font-weight:700;color:#0f1c2e;margin-bottom:10px">Postes regroupés — vérifiez l'affectation et importez</div>
     <div id="pdf-tx-list"></div>
     <div style="margin-top:16px;display:flex;gap:8px">
       <button onclick="pdfImport()" style="flex:1;padding:10px;background:#0d9e6e;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer">&#10003; Importer dans la trésorerie</button>
@@ -1459,17 +1459,26 @@ function bkDel(){
 
 var _pdfTx = [];
 
-function pdfOpen(){ document.getElementById('pdf-ov').classList.add('open'); }
+function pdfOpen(){
+  document.getElementById('pdf-ov').classList.add('open');
+  // pré-sélectionner la société actuellement affichée
+  var sel=document.getElementById('pdf-resto');
+  if(sel){ for(var i=0;i<sel.options.length;i++){ if(sel.options[i].value===resto){ sel.selectedIndex=i; break; } } }
+}
 function pdfClose(){
   document.getElementById('pdf-ov').classList.remove('open');
   document.getElementById('pdf-results').style.display='none';
   document.getElementById('pdf-status').style.display='none';
+  var det=document.getElementById('pdf-resto-detected'); if(det) det.style.display='none';
   document.getElementById('pdf-drop').innerHTML='<div style="font-size:32px;margin-bottom:8px">&#128196;</div><div style="font-size:14px;font-weight:600;color:#0f1c2e;margin-bottom:4px">Cliquez ou glissez votre PDF ici</div><div style="font-size:12px;color:#7a90a8">Relevé bancaire mensuel</div><input id="pdf-file" type="file" accept=".pdf" style="display:none" onchange="pdfSelected(this)">';
-  _pdfTx=[];
+  _pdfTx=[]; _pdfParsed=null;
 }
 
 function pdfSelected(inp){
   var file=inp.files[0]; if(!file) return;
+  // la société cible = celle choisie dans le menu déroulant du modal
+  var sel=document.getElementById('pdf-resto');
+  if(sel && sel.value) resto = sel.value;
   document.getElementById('pdf-drop').querySelector('div').textContent=file.name;
   pdfAnalyse(file);
 }
@@ -1483,134 +1492,225 @@ function pdfStatus(msg, color){
 }
 
 function pdfAnalyse(file){
-  var apikey=document.getElementById('pdf-apikey').value.trim();
-  if(!apikey){ pdfStatus('Veuillez saisir votre clé API Anthropic','err'); return; }
-  pdfStatus('Lecture du PDF en cours...','info');
+  pdfStatus('Lecture du relevé en cours… (cela peut prendre 30 s)','info');
 
   var reader=new FileReader();
   reader.onload=function(e){
     var b64=e.target.result.split(',')[1];
+
+    // Liste des fournisseurs déjà connus pour CETTE société (aide au rapprochement)
     var restoSel=resto;
     var fournisseurs=[];
-    Object.keys(RAW).forEach(function(r){
+    if(RAW[restoSel]){
       ['sorties','entrees'].forEach(function(sec){
-        RAW[r][sec].forEach(function(x){ if(x.label.toUpperCase()!=='TOTAL') fournisseurs.push(x.label); });
+        (RAW[restoSel][sec]||[]).forEach(function(x){
+          if(x.label && x.label.toUpperCase()!=='TOTAL' && x.label.length>1) fournisseurs.push(x.label);
+        });
       });
-    });
-    fournisseurs=fournisseurs.filter(function(v,i,a){return a.indexOf(v)===i;});
+    }
 
-    var restoNames=Object.keys(RAW).join(', ');
-    var prompt='Tu es un expert comptable. Voici un relevé bancaire PDF.\n'
-      +'1. Identifie le restaurant parmi : '+restoNames+'. Cherche le nom ou numéro de compte.\n'
-      +'2. Extrais TOUTES les transactions (débit ET crédit).\n'
-      +'3. Pour chaque transaction, fais correspondre au fournisseur le plus proche parmi : '+fournisseurs.join(', ')+'\n'
-      +'Réponds UNIQUEMENT en JSON : {"restaurant":"nom exact ou null","transactions":[{"libelle":"...","montant":0.00,"type":"sortie ou entree","mois":"JAN 2025","fournisseur":"nom exact ou null"}]}\n'
-      +'Montant toujours positif. sortie=débit, entree=crédit.';
+    // Prompt comptable : extraire + REGROUPER selon les règles VH
+    var prompt = pdfBuildPrompt(fournisseurs);
 
-    fetch('https://api.anthropic.com/v1/messages',{
+    var payload = {
+      model: 'claude-opus-4-5',
+      max_tokens: 8000,
+      messages: [{role:'user', content:[
+        {type:'document', source:{type:'base64', media_type:'application/pdf', data:b64}},
+        {type:'text', text:prompt}
+      ]}]
+    };
+
+    // On passe par le gardien serveur /api/ia (clé cachée côté Vercel).
+    fetch('/api/ia', {
       method:'POST',
-      headers:{
-        'Content-Type':'application/json',
-        'x-api-key':apikey,
-        'anthropic-version':'2023-06-01',
-        'anthropic-dangerous-direct-browser-access':'true'
-      },
-      body:JSON.stringify({
-        model:'claude-opus-4-5',
-        max_tokens:4000,
-        messages:[{role:'user',content:[
-          {type:'document',source:{type:'base64',media_type:'application/pdf',data:b64}},
-          {type:'text',text:prompt}
-        ]}]
-      })
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(payload)
     })
-    .then(function(r){return r.json();})
+    .then(function(r){
+      if(!r.ok){
+        return r.json().then(function(j){
+          throw new Error((j&&j.error) ? j.error : ('Serveur IA HTTP '+r.status));
+        }).catch(function(){ throw new Error('Serveur IA HTTP '+r.status+' (clé ANTHROPIC_API_KEY configurée dans Vercel ?)'); });
+      }
+      return r.json();
+    })
     .then(function(data){
-      if(data.error){ pdfStatus('Erreur API : '+data.error.message,'err'); return; }
-      var txt=data.content[0].text;
+      if(data.error){ pdfStatus('Erreur IA : '+(data.error.message||data.error),'err'); return; }
+      var txt='';
+      (data.content||[]).forEach(function(b){ if(b.type==='text') txt+=b.text; });
       var m=txt.match(/\{[\s\S]*\}/);
-      if(!m){ pdfStatus('Impossible de lire la réponse','err'); return; }
+      if(!m){ pdfStatus('Réponse IA illisible.','err'); return; }
       try{
         var parsed=JSON.parse(m[0]);
-        var detectedResto=parsed.restaurant||null;
-        _pdfTx=parsed.transactions||[];
-        var el=document.getElementById('pdf-resto-detected');
-        el.style.display='block';
-        if(detectedResto&&RAW[detectedResto]){
-          restoSel=detectedResto;
-          el.style.background='#e6f9f1'; el.style.color='#0d9e6e';
-          el.textContent='Restaurant détecté : '+detectedResto;
-        } else {
-          el.style.background='#fff3e0'; el.style.color='#e07d1a';
-          el.textContent='Restaurant non détecté — les transactions seront ajoutées à '+restoSel;
-        }
-        pdfShowResults(restoSel);
-      }catch(ex){ pdfStatus('Erreur JSON : '+ex.message,'err'); }
+        _pdfParsed = parsed;
+        pdfTraiteResultat(parsed, restoSel);
+      }catch(ex){ pdfStatus('Erreur lecture JSON : '+ex.message,'err'); }
     })
-    .catch(function(ex){ pdfStatus('Erreur réseau : '+ex.message,'err'); });
+    .catch(function(ex){ pdfStatus('Erreur : '+ex.message,'err'); });
   };
   reader.readAsDataURL(file);
 }
 
-
-var _pdfRestoSel='';
-function pdfShowResults(restoSel){
-  _pdfRestoSel=restoSel;
-  var fournisseurs=[];
-  ['sorties','entrees'].forEach(function(sec){
-    RAW[restoSel][sec].forEach(function(r){if(r.label.toUpperCase()!=='TOTAL')fournisseurs.push(r.label);});
-  });
-  pdfStatus(_pdfTx.length+' transaction(s) détectée(s)','ok');
-  var MOIS=['DÉC 2024','JAN 2025','FEV 2025','MAR 2025','AVR 2025','MAI 2025','JUI 2025','JUL 2025','AOU 2025','SEP 2025','OCT 2025','NOV 2025','DEC 2025','JAN 2026','FEV 2026','MAR 2026','AVR 2026','MAI 2026'];
-  var h='';
-  _pdfTx.forEach(function(tx,i){
-    var color=tx.type==='sortie'?'#e03a3a':'#0d9e6e';
-    var opts=fournisseurs.map(function(f){
-      return '<option value="'+f+'"'+(f===tx.fournisseur?' selected':'')+'>'+f+'</option>';
-    }).join('');
-    var moisOpts=MOIS.map(function(m){
-      return '<option value="'+m+'"'+(m===tx.mois?' selected':'')+'>'+m+'</option>';
-    }).join('');
-    h+='<div class="tx-row">'
-      +'<div class="tx-lbl">'+tx.libelle+'</div>'
-      +'<div class="tx-amt" style="color:'+color+'">'+(tx.type==='sortie'?'- ':'')+tx.montant.toLocaleString('fr-FR')+' €</div>'
-      +'<select class="tx-mois" data-i="'+i+'">'+moisOpts+'</select>'
-      +'<select class="tx-sel" data-i="'+i+'"><option value="">-- Choisir --</option>'+opts+'</select>'
-      +'</div>';
-  });
-  document.getElementById('pdf-tx-list').innerHTML=h;
-  document.getElementById('pdf-results').style.display='block';
+// Construit le prompt d'extraction + regroupement (règles métier VH)
+function pdfBuildPrompt(fournisseurs){
+  return [
+'Tu es un expert-comptable. On te donne un relevé de compte bancaire (souvent Banque Populaire du Sud, parfois Crédit Agricole).',
+'',
+'OBJECTIF : extraire les opérations et les REGROUPER par poste/fournisseur, avec un TOTAL par poste pour la période du relevé.',
+'',
+'RÈGLES DE REGROUPEMENT (très important) :',
+'- Toutes les lignes "REMISE CB" → UN seul poste "REMISE CB" (somme des montants, crédit).',
+'- Toutes les lignes "COM CB" → UN seul poste "COM CB" (somme, débit).',
+'- Toutes les lignes "REMBT CB" → poste "REMBT CB".',
+'- Tous les "VRST DEPOT" / "VRST" (dépôts d\'espèces) → UN seul poste "VRST DEPOT" (somme, crédit).',
+'- Les recettes plateformes restent SÉPARÉES, un poste chacune : "UBER" (STICHTING CUSTODIAN UBER PAYMENTS), "DELIVEROO", et les titres-restaurant séparés : "SWILE", "PLUXEE", "UP COOP", "EDENRED", "BIMPLI" (REGLEMENT AFFILIES / NIT-TRD).',
+'- Les autres fournisseurs (PRLV SEPA xxx, VIR xxx) : un poste par créancier réel (regarde le détail SEPA en fin de relevé qui donne le vrai nom).',
+'',
+'INDICES MÉTIER (pour t\'aider à nommer le poste, sans inventer) :',
+'- "FRANCE BKR" = redevance/loyer Burger King.',
+'- "QSL-STEF" = fournisseur de marchandises (nourriture).',
+'- "VIR SEPA M VINCENT HILAI" ou "REMUNERATION" = rémunération du gérant.',
+'- "VIR SEPA REMISE" gros montant = salaires versés (poste "SALAIRES").',
+'- "URSSAF" : distingue "URSSAF VINCENT" (gérant, si le libellé le précise) de "URSSAF" (salariés).',
+'- "PRLV INT ETS DIRECTION G" ou "DGFIP" : impôts — précise IS / TVA / CVAE / PAS d\'après le libellé (IS-, TVA-, CVAE-, IMPOT-PAS-).',
+'- "LUCIA" = électricité. "EDF" = électricité. "AREAS", "ROEDERER" = assurances.',
+'- "DRFIP ILE DE FRANCE" = remboursement/aide (crédit).',
+'',
+'IBAN : repère l\'IBAN du compte (format FRxx...) et le nom du titulaire.',
+'',
+'Voici les postes DÉJÀ EXISTANTS dans cette société (réutilise EXACTEMENT le même nom si ça correspond, sinon propose un nouveau nom clair) :',
+fournisseurs.length ? fournisseurs.join(', ') : '(aucun pour le moment)',
+'',
+'Réponds UNIQUEMENT en JSON, sans texte autour :',
+'{',
+'  "iban": "FR...",',
+'  "titulaire": "SARL ...",',
+'  "periode": "MAI 2026",',
+'  "solde_initial": 0.00,',
+'  "solde_final": 0.00,',
+'  "postes": [',
+'    {"nom":"REMISE CB","type":"entree","total":0.00,"nb":0,"categorie":"recette","existant":true},',
+'    {"nom":"FRANCE BKR","type":"sortie","total":0.00,"nb":1,"categorie":"loyer","existant":false}',
+'  ]',
+'}',
+'',
+'"type" = "entree" (crédit) ou "sortie" (débit). "total" = somme POSITIVE du poste sur la période.',
+'"categorie" parmi : recette, loyer, marchandises, salaires, cout-vincent, social, assurance, impots, energie, banque, inter-societe, autre.',
+'"existant" = true si le nom correspond à un poste déjà existant fourni ci-dessus.',
+'"periode" au format "MOIS AAAA" en 3 lettres majuscules françaises (JAN, FEV, MAR, AVR, MAI, JUI, JUL, AOU, SEP, OCT, NOV, DEC).'
+  ].join('\n');
 }
 
 
+
+var _pdfRestoSel='';
+var _pdfParsed=null;
+
+// Affiche les postes regroupés détectés, pour validation comptable
+function pdfTraiteResultat(parsed, restoSel){
+  _pdfRestoSel = restoSel;
+  var postes = parsed.postes||[];
+  if(!postes.length){ pdfStatus('Aucun poste détecté dans ce relevé.','err'); return; }
+
+  // Période détectée (ex. "MAI 2026")
+  var periode = (parsed.periode||'').toUpperCase().trim();
+
+  // Liste des postes existants de la société (pour le menu déroulant)
+  var fournisseurs=[];
+  if(RAW[restoSel]){
+    ['sorties','entrees'].forEach(function(sec){
+      (RAW[restoSel][sec]||[]).forEach(function(r){ if(r.label && r.label.toUpperCase()!=='TOTAL' && r.label.length>1) fournisseurs.push(r.label); });
+    });
+  }
+
+  // Bandeau IBAN / période / soldes
+  var info = document.getElementById('pdf-resto-detected');
+  if(info){
+    info.style.display='block';
+    info.style.background='#eef4ff'; info.style.color='#1a4a7e';
+    info.innerHTML = '<strong>'+(parsed.titulaire||restoSel)+'</strong> · Période : '+(periode||'?')
+      + (parsed.iban ? '<br><span style="font-size:11px">IBAN '+parsed.iban+'</span>' : '')
+      + (parsed.solde_final!=null ? '<br><span style="font-size:11px">Solde final relevé : '+Number(parsed.solde_final).toLocaleString('fr-FR')+' €</span>' : '');
+  }
+
+  pdfStatus(postes.length+' poste(s) regroupé(s) — vérifiez l\'affectation puis importez','ok');
+
+  var h='';
+  postes.forEach(function(p,i){
+    var color = p.type==='sortie' ? '#e03a3a' : '#0d9e6e';
+    var matchExist = fournisseurs.some(function(f){ return f.toUpperCase()===(p.nom||'').toUpperCase(); });
+    var opts = '<option value="__NEW__"'+(matchExist?'':' selected')+'>➕ Nouveau poste : '+(p.nom||'?')+'</option>';
+    opts += fournisseurs.map(function(f){
+      return '<option value="'+f.replace(/"/g,'')+'"'+(f.toUpperCase()===(p.nom||'').toUpperCase()?' selected':'')+'>'+f+'</option>';
+    }).join('');
+    h += '<div class="tx-row" data-i="'+i+'">'
+      + '<div class="tx-lbl">'+(p.nom||'?')+' <span style="color:#7a90a8;font-size:10px">'+(p.nb?('×'+p.nb):'')+' · '+(p.categorie||'autre')+'</span></div>'
+      + '<div class="tx-amt" style="color:'+color+'">'+(p.type==='sortie'?'- ':'+ ')+Number(p.total||0).toLocaleString('fr-FR')+' €</div>'
+      + '<select class="tx-sel" data-i="'+i+'">'+opts+'</select>'
+      + '</div>';
+  });
+  document.getElementById('pdf-tx-list').innerHTML = h;
+  document.getElementById('pdf-results').style.display='block';
+
+  // mémoriser la période pour l'import
+  _pdfParsed._periode = periode;
+}
+
+// Importe les postes validés dans la trésorerie + Supabase (ÉCRASE le mois)
 function pdfImport(){
   var restoSel=_pdfRestoSel;
-  var rows=document.querySelectorAll('.tx-row');
+  var periode=(_pdfParsed&&_pdfParsed._periode)||'';
+  if(!periode){ pdfStatus('Période du relevé non détectée.','err'); return; }
+  var postes=_pdfParsed.postes||[];
+  var rows=document.querySelectorAll('#pdf-tx-list .tx-row');
   var imported=0;
-  rows.forEach(function(row,i){
-    var tx=_pdfTx[i];
-    var fournisseur=row.querySelector('.tx-sel').value;
-    var mois=row.querySelector('.tx-mois').value;
-    if(!fournisseur) return;
-    var sec=tx.type==='sortie'?'sorties':'entrees';
-    var r=RAW[restoSel][sec].find(function(x){return x.label===fournisseur;});
-    if(r){
-      if(!r.vals) r.vals={};
-      r.vals[mois]=(r.vals[mois]||0)+tx.montant;
-      imported++;
+
+  // S'assurer que le mois importé existe dans la liste des colonnes (wanted)
+  if(RAW[restoSel] && RAW[restoSel].wanted){
+    var present = RAW[restoSel].wanted.some(function(w){ return w.label===periode; });
+    if(!present){
+      var an = (periode.match(/\d{4}/)||['2026'])[0];
+      RAW[restoSel].wanted.push({label:periode, year:an, reel:true});
+    } else {
+      // marquer ce mois comme réel (issu d'un vrai relevé)
+      RAW[restoSel].wanted.forEach(function(w){ if(w.label===periode) w.reel=true; });
+    }
+  }
+
+  rows.forEach(function(row){
+    var i=+row.getAttribute('data-i');
+    var p=postes[i]; if(!p) return;
+    var sel=row.querySelector('.tx-sel').value;
+    var nom = (sel==='__NEW__') ? (p.nom||'').trim() : sel;
+    if(!nom) return;
+    var sec = p.type==='sortie' ? 'sorties' : 'entrees';
+    var montant = Number(p.total)||0;
+
+    // Trouver/créer la ligne dans RAW
+    if(!RAW[restoSel]) return;
+    var ligne = RAW[restoSel][sec].find(function(x){return x.label===nom;});
+    if(!ligne){
+      var ti = RAW[restoSel][sec].findIndex(function(x){return (x.label||'').toUpperCase()==='TOTAL';});
+      ligne = {label:nom, vals:{}};
+      if(ti>=0) RAW[restoSel][sec].splice(ti,0,ligne); else RAW[restoSel][sec].push(ligne);
+    }
+    if(!ligne.vals) ligne.vals={};
+    // ÉCRASEMENT du mois : le relevé fait foi (remplace l'éventuel "en dur")
+    ligne.vals[periode] = montant;
+    imported++;
+
+    // Sauvegarde Supabase (action 'update' = écrase ce mois pour ce poste)
+    var vals={}; vals[periode]=montant;
+    sbSave(restoSel, sec, nom, vals, 'update');
+    // Mémoriser la catégorie (apprentissage) si fournie
+    if(p.categorie && window.tresoSaveCategorie){
+      window.tresoSaveCategorie(restoSel, sec, nom, p.categorie);
     }
   });
-  pdfStatus(imported+' transaction(s) importée(s) avec succès !','ok');
-  setTimeout(function(){ pdfClose(); render(); },1500);
-  // Sauvegarde Supabase
-  rows.forEach(function(row,i){
-    var tx=_pdfTx[i];
-    var fournisseur=row.querySelector('.tx-sel').value;
-    var mois=row.querySelector('.tx-mois').value;
-    if(!fournisseur) return;
-    var vals={}; vals[mois]=tx.montant;
-    sbSave(_pdfRestoSel, tx.type==='sortie'?'sorties':'entrees', fournisseur, vals, 'update');
-  });
+
+  pdfStatus(imported+' poste(s) importé(s) pour '+periode+' ✓','ok');
+  setTimeout(function(){ pdfClose(); render(); if(window.tresoOnUpdate) window.tresoOnUpdate(); },1400);
 }
 
 
@@ -1660,6 +1760,25 @@ async function sbSave(resto, section, label, vals, action){
 window.TRESO_DATA = RAW;
 window.TRESO_SOC = EXTRA_SOC;
 window.TRESO_INIT = function(){ if(window._tresoStarted) return; window._tresoStarted = true; buildSocieteSidebar(); sbLoad(); window.TRESO_DATA = RAW; if(window.tresoOnUpdate) window.tresoOnUpdate(); };
+
+// Les onclick du HTML cherchent ces fonctions en GLOBAL : on les ré-expose
+// depuis l'IIFE (sinon « setResto », « setYear »… sont introuvables et la
+// navigation interne de la trésorerie ne réagit pas).
+window.setResto = setResto;
+window.setPage = setPage;
+window.setYear = setYear;
+window.renderDashboard = renderDashboard;
+window.renderAnnuel = renderAnnuel;
+window.renderMensuel = renderMensuel;
+window.bkOpenEdit = bkOpenEdit;
+window.bkOpenNew = bkOpenNew;
+window.bkClose = bkClose;
+window.bkSave = bkSave;
+window.bkDel = bkDel;
+window.pdfOpen = pdfOpen;
+window.pdfClose = pdfClose;
+window.pdfSelected = pdfSelected;
+window.pdfImport = pdfImport;
 
 })();
 </script>
@@ -6032,6 +6151,30 @@ async function loadTresoCategories(){
     (data||[]).forEach(r=>{ if(r.cle && r.categorie) TRESO_CAT_OVERRIDE[r.cle] = r.categorie; });
   }catch(e){ console.warn('loadTresoCategories:', e); }
 }
+
+// Mémoriser une catégorie apprise (apprentissage) : écrit dans Supabase + cache local.
+// Une fois appris, le système ne redemande plus jamais où va ce poste.
+window.tresoSaveCategorie = async function(soc, section, label, categorie){
+  try{
+    // soc peut être une clé trésorerie ("BK 500") ou une clé société Hub : on stocke tel quel
+    const cle = tresoCatKey(soc, section, label);
+    TRESO_CAT_OVERRIDE[cle] = categorie;  // mémoire immédiate
+    // upsert dans Supabase (clé unique = cle)
+    const {error} = await sb.from('treso_categories').upsert({cle:cle, categorie:categorie}, {onConflict:'cle'});
+    if(error) console.warn('tresoSaveCategorie:', error.message);
+  }catch(e){ console.warn('tresoSaveCategorie:', e); }
+};
+
+// Appelé par la trésorerie après un import : rafraîchit la carte société visible
+window.tresoOnUpdate = function(){
+  try{
+    document.querySelectorAll('.panel').forEach(function(p){
+      if(p.id && p.id.indexOf('tab-soc-')===0 && p.style.display!=='none'){
+        renderTresoSoc(p.id.slice(8));
+      }
+    });
+  }catch(e){}
+};
 
 // ── ÉTAPE 1 — SOCIÉTÉS : carte trésorerie sur chaque page société ──
 const eurT = n => (n||n===0) ? Math.round(n).toLocaleString('fr-FR')+'€' : '—';
