@@ -232,7 +232,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:14
 <div id="tab-dashboard" class="panel active">
   <div style="display:flex;justify-content:flex-end;margin-bottom:10px;">
     <span id="maj-badge" style="display:inline-flex;align-items:center;gap:6px;background:var(--success-l);color:var(--success);font-size:11px;font-weight:600;font-family:var(--mono);padding:4px 11px;border-radius:20px;border:1px solid rgba(22,101,52,0.2);">
-      <span style="font-size:9px;">●</span> Mis à jour le vendredi 12 juin 2026 à 22h18
+      <span style="font-size:9px;">●</span> Mis à jour le dimanche 14 juin 2026 à 09h41
     </span>
   </div>
   <!-- Optimisation panel toujours visible -->
@@ -2299,35 +2299,74 @@ JSON attendu :
   "titre": "intitulé court (ex : Acte achat 2019)" }`;
 }
 
-// Lance l'extraction IA d'un PDF bâtiment et renvoie l'objet JSON (ou null).
-// Réutilise /api/ia comme pour les bilans (conversion PDF → images via pdf.js).
+// Convertit une IMAGE (JPEG/PNG/scan/photo) en base64 compressé, redimensionnée.
+// Permet à l'IA de lire un document photographié ou scanné, pas seulement un PDF texte.
+async function imageFileToBase64(file, opts){
+  opts = opts || {};
+  const maxW = opts.maxWidth || 1400;
+  const quality = opts.quality || 0.7;
+  const dataUrl = await new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res(r.result); r.onerror=()=>rej(new Error('Lecture du fichier image impossible')); r.readAsDataURL(file); });
+  const img = await new Promise((res,rej)=>{ const im=new Image(); im.onload=()=>res(im); im.onerror=()=>rej(new Error('Image illisible')); im.src=dataUrl; });
+  let w = img.naturalWidth || img.width, h = img.naturalHeight || img.height;
+  if(w > maxW){ h = Math.round(h * maxW / w); w = maxW; }
+  const canvas = document.createElement('canvas'); canvas.width=w; canvas.height=h;
+  canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+  return canvas.toDataURL('image/jpeg', quality).split(',')[1];
+}
+
+// Lance l'extraction IA d'un document bâtiment et renvoie l'objet JSON (ou {error}).
+// Accepte TOUT : PDF (texte OU scan), JPEG, PNG, photo. L'IA Claude sait lire une image,
+// donc on lui envoie des images dans tous les cas. Messages d'erreur explicites.
 async function batExtractDoc(cat, file, batNom){
-  if((file.name.split('.').pop()||'').toLowerCase()!=='pdf'){ return {error:'Pas un PDF — lecture auto impossible.'}; }
-  // On lit TOUTES les pages du document (jamais de troncature) : un bail détaille la
-  // surface/dépôt/charges en pages 4-6, un tableau d'amortissement étale le capital
-  // restant dû sur de nombreuses pages. Si le lot est trop lourd pour /api/ia, on baisse
-  // la RÉSOLUTION (pas le nombre de pages) jusqu'à ce que ça passe.
-  const ALL = 80; // lit toutes les pages (plafond haut de sécurité pour ne pas figer le navigateur)
+  const ext = (file.name.split('.').pop()||'').toLowerCase();
+  const type = (file.type||'').toLowerCase();
+  const isPdf   = ext==='pdf'  || type==='application/pdf';
+  const isImage = /^(jpe?g|png|webp|gif|bmp|heic|heif|tif?f)$/.test(ext) || /^image\//.test(type);
+  if(!isPdf && !isImage){ return {error:'Format non pris en charge pour la lecture auto ('+(ext||type||'inconnu')+'). Formats lus : PDF, JPG, PNG, scan, photo.'}; }
+
+  // Paliers de compression décroissante : on réessaie plus léger si le serveur refuse (413/400).
+  const ALL = 80;
   const paliers = [
-    {pages:ALL, maxWidth:1400, quality:0.68},
-    {pages:ALL, maxWidth:1150, quality:0.55},
-    {pages:ALL, maxWidth:950,  quality:0.45},
-    {pages:ALL, maxWidth:800,  quality:0.38}
+    {pages:ALL, maxWidth:1500, quality:0.72},
+    {pages:ALL, maxWidth:1200, quality:0.6},
+    {pages:ALL, maxWidth:1000, quality:0.5},
+    {pages:ALL, maxWidth:820,  quality:0.42}
   ];
   let lastErr = '';
   for(let i=0;i<paliers.length;i++){
     const cfg = paliers[i];
     try {
-      const imgs = await pdfToImages(file, cfg.pages, {maxWidth:cfg.maxWidth, quality:cfg.quality});
-      if(!imgs || !imgs.length){ lastErr='PDF illisible (aucune page rendue).'; continue; }
+      // 1) Obtenir les images du document, quel que soit son type
+      let imgs = [];
+      if(isPdf){
+        try {
+          imgs = await pdfToImages(file, cfg.pages, {maxWidth:cfg.maxWidth, quality:cfg.quality});
+        } catch(pdfErr){
+          // PDF illisible par pdf.js (souvent un scan encapsulé mal formé) : on tente
+          // de le traiter comme une image directe en dernier recours.
+          imgs = [];
+        }
+        // Scan en PDF : pdf.js rend quand même la page en image, donc imgs ne devrait pas
+        // être vide. S'il l'est, on signale clairement.
+        if((!imgs || !imgs.length) && i===paliers.length-1){
+          lastErr = 'PDF illisible (ni texte ni image exploitable). Réessaie en déposant une photo / un export JPEG du document.';
+          continue;
+        }
+      } else {
+        // Image directe (JPEG/PNG/scan/photo)
+        const b64 = await imageFileToBase64(file, {maxWidth:cfg.maxWidth, quality:cfg.quality});
+        imgs = b64 ? [b64] : [];
+      }
+      if(!imgs || !imgs.length){ lastErr='Aucune image exploitable produite à partir du document.'; continue; }
+
+      // 2) Envoi à l'IA (toujours sous forme d'images : ça marche pour PDF texte, scan, photo)
       const content = imgs.map(d=>({type:'image', source:{type:'base64', media_type:'image/jpeg', data:d}}));
       content.push({type:'text', text: batPromptFor(cat, batNom)});
       const payload = JSON.stringify({ model:'claude-sonnet-4-5', max_tokens:1500, messages:[{role:'user', content}] });
       const r = await fetch('/api/ia', { method:'POST', headers:{'Content-Type':'application/json'}, body: payload });
       if(!r.ok){
-        lastErr = 'Serveur IA : HTTP '+r.status;
-        // 413/400 = trop gros → palier suivant (résolution plus basse, mêmes pages)
-        if(r.status===413 || r.status===400){ continue; }
+        lastErr = 'Serveur de lecture IA : HTTP '+r.status;
+        if(r.status===413 || r.status===400){ continue; } // trop lourd → palier plus compressé
         return {error:lastErr};
       }
       const j = await r.json();
@@ -2336,12 +2375,12 @@ async function batExtractDoc(cat, file, batNom){
       else if(j && j.content && j.content[0] && j.content[0].text) txt = j.content[0].text;
       txt = (txt||'').replace(/```json|```/g,'').trim();
       const m = txt.match(/\{[\s\S]*\}/);
-      if(!m){ lastErr='Réponse IA non exploitable.'; continue; }
+      if(!m){ lastErr='L\'IA n\'a pas renvoyé de données exploitables (document peut-être trop flou / illisible).'; continue; }
       try { return JSON.parse(m[0]); }
-      catch(e){ lastErr='JSON IA invalide.'; continue; }
+      catch(e){ lastErr='Réponse IA non décodable (JSON invalide).'; continue; }
     } catch(e){ lastErr=(e&&e.message)||'erreur inconnue'; }
   }
-  return {error: lastErr || 'Lecture auto impossible.'};
+  return {error: lastErr || 'Lecture auto impossible après plusieurs tentatives.'};
 }
 
 // Construit la zone « documents de cette catégorie » : liste cliquable + dépôt.
@@ -2420,9 +2459,11 @@ async function batDocHandle(cat, files){
     await saveBatToDb(b);
     recomputeBat();
     if(statusEl){
-      statusEl.innerHTML = data
-        ? '<span style="color:var(--success);">✓ '+f.name+' ajouté et lu. Les champs ci-dessous ont été pré-remplis — vérifie et enregistre.</span>'
-        : '<span style="color:var(--warn);">⚠ '+f.name+' sauvegardé dans Dropbox, mais lecture auto non aboutie'+(errMsg?(' ('+errMsg+')'):'')+'. Utilise « 🔄 Relire » sur le document, ou remplis les champs à la main.</span>';
+      if(data){
+        statusEl.innerHTML = '<span style="color:var(--success);">✓ '+f.name+' ajouté et lu. Les champs ci-dessous ont été pré-remplis — vérifie et enregistre.</span>';
+      } else {
+        statusEl.innerHTML = '<span style="color:var(--warn);">⚠ '+f.name+' a bien été sauvegardé dans Dropbox, mais la <strong>lecture automatique n\'a pas abouti</strong>'+(errMsg?(' — '+errMsg):'')+'<br>👉 Clique « 🔄 Relire » pour réessayer, ou remplis les champs du prêt à la main (bouton « + Ajouter un prêt manuellement »).</span>';
+      }
     }
   }
   batSub(cat);
