@@ -1704,6 +1704,7 @@ function pdfBuildPrompt(fournisseurs){
 '- "DRFIP ILE DE FRANCE" = remboursement/aide reçue (entree).',
 '',
 'IBAN : repère l\'IBAN (FRxx...), le titulaire, la période (mois principal du relevé), et les soldes initial/final si présents.',
+'TOTAUX OFFICIELS : repère aussi les deux totaux imprimés en bas du relevé : "TOTAL DES MOUVEMENTS DEBITEURS" et "TOTAL DES MOUVEMENTS CREDITEURS". Recopie-les dans "total_debits" et "total_credits" (nombres positifs). Ils servent à vérifier qu\'aucune opération n\'a été oubliée.',
 '',
 'Postes DÉJÀ EXISTANTS dans cette société (réutilise EXACTEMENT le même nom si ça correspond) :',
 fournisseurs.length ? fournisseurs.join(', ') : '(aucun)',
@@ -1712,6 +1713,7 @@ fournisseurs.length ? fournisseurs.join(', ') : '(aucun)',
 '{',
 '  "iban":"FR...", "titulaire":"SARL ...", "periode":"MAI 2026",',
 '  "solde_initial":154854.38, "solde_final":198224.78,',
+'  "total_debits":345998.38, "total_credits":389368.78,',
 '  "operations":[',
 '    {"libelle":"REMISE CB","montant":8733.46,"type":"entree","poste":"REMISE CB","categorie":"recette","sur":true},',
 '    {"libelle":"PRLV SEPA FRANCE BKR","montant":97761.43,"type":"sortie","poste":"FRANCE BKR","categorie":"loyer","sur":true}',
@@ -1758,19 +1760,32 @@ function pdfTraiteResultat(parsed, restoSel){
   }
 
   // ── REGROUPEMENT + ADDITION (côté app, fiable) ──
-  var groupes={};                 // clé poste → {nom,type,total,nb,categorie,sur}
+  // Règle : les opérations SÛRES sont regroupées par poste (REMISE CB, etc.).
+  // Les opérations DOUTEUSES restent SÉPARÉES une par une — car un même libellé
+  // peut cacher deux affectations différentes (ex. "VIR SEPA REMISE" = salaires OU impôt).
+  var groupes={};
+  var individuelles=[];
   var ctrlIn=0, ctrlOut=0;
-  ops.forEach(function(o){
+  ops.forEach(function(o, idx){
     var montant = pdfNum(o.montant);
     if(o.type==='sortie') ctrlOut+=montant; else ctrlIn+=montant;
     var poste = (o.poste||o.libelle||'?').trim();
-    var k = (o.type||'')+'||'+poste.toUpperCase();
-    if(!groupes[k]) groupes[k]={nom:poste, type:o.type||'sortie', total:0, nb:0, categorie:o.categorie||'autre', sur:true};
-    groupes[k].total += montant;
-    groupes[k].nb++;
-    if(o.sur===false) groupes[k].sur=false;     // si une opération doute, le poste doute
+
+    if(o.sur===false){
+      // douteuse → ligne individuelle, non fusionnée
+      individuelles.push({
+        nom: poste, libelle:(o.libelle||poste),
+        type:o.type||'sortie', total:montant, nb:1,
+        categorie:o.categorie||'autre', sur:false, individuelle:true
+      });
+    } else {
+      var k = (o.type||'')+'||'+poste.toUpperCase();
+      if(!groupes[k]) groupes[k]={nom:poste, type:o.type||'sortie', total:0, nb:0, categorie:o.categorie||'autre', sur:true};
+      groupes[k].total += montant;
+      groupes[k].nb++;
+    }
   });
-  var postes = Object.keys(groupes).map(function(k){return groupes[k];});
+  var postes = Object.keys(groupes).map(function(k){return groupes[k];}).concat(individuelles);
   // tri : douteux d'abord, puis par montant décroissant
   postes.sort(function(a,b){ if(a.sur!==b.sur) return a.sur?1:-1; return b.total-a.total; });
 
@@ -1778,19 +1793,42 @@ function pdfTraiteResultat(parsed, restoSel){
   _pdfParsed._periode = periode;
   _pdfParsed._postes = postes;
 
-  // Bandeau IBAN / période / contrôle
-  var variation = ctrlIn - ctrlOut;
+  // ── CONTRÔLE par rapport aux TOTAUX OFFICIELS imprimés sur le relevé ──
+  var totD = parsed.total_debits!=null ? pdfNum(parsed.total_debits) : null;
+  var totC = parsed.total_credits!=null ? pdfNum(parsed.total_credits) : null;
+  var ecartD = (totD!=null) ? (ctrlOut - totD) : null;   // <0 = il manque des sorties
+  var ecartC = (totC!=null) ? (ctrlIn  - totC) : null;   // <0 = il manque des entrées
+  var okD = (ecartD!=null) && Math.abs(ecartD) < 0.5;
+  var okC = (ecartC!=null) && Math.abs(ecartC) < 0.5;
+  var controleDispo = (totD!=null || totC!=null);
+  var toutOk = (totD==null||okD) && (totC==null||okC);
+  _pdfParsed._controleOk = !controleDispo || toutOk;
+
+  // fallback : si pas de totaux officiels, on retombe sur le contrôle par solde
   var soldeVar = (parsed.solde_final!=null && parsed.solde_initial!=null) ? (pdfNum(parsed.solde_final)-pdfNum(parsed.solde_initial)) : null;
-  var ctrlOk = (soldeVar!=null) && Math.abs(variation - soldeVar) < 0.5;
+
   var info = document.getElementById('pdf-resto-detected');
   if(info){
     info.style.display='block';
-    info.style.background = ctrlOk?'#e6f9f1':(soldeVar!=null?'#fff7ec':'#eef4ff');
-    info.style.color = ctrlOk?'#0d7a52':(soldeVar!=null?'#b3600f':'#1a4a7e');
+    var couleurOk = toutOk && controleDispo;
+    info.style.background = couleurOk?'#e6f9f1':(controleDispo?'#fff7ec':'#eef4ff');
+    info.style.color = couleurOk?'#0d7a52':(controleDispo?'#b3600f':'#1a4a7e');
+    var ligneCtrl='';
+    if(controleDispo){
+      var msgs=[];
+      if(totC!=null) msgs.push(okC ? 'entrées ✓' : 'entrées : il manque '+(-ecartC).toLocaleString('fr-FR')+'€');
+      if(totD!=null) msgs.push(okD ? 'sorties ✓' : 'sorties : il manque '+(-ecartD).toLocaleString('fr-FR')+'€');
+      ligneCtrl = '<br><span style="font-size:11px">Contrôle relevé : '+(toutOk?'✓ tout est lu':('⚠ '+msgs.join(' · ')))+'</span>';
+      if(!toutOk) ligneCtrl += '<br><span style="font-size:10px">Des opérations ont été oubliées par la lecture. Réessaie l\'import, ou ajoute les lignes manquantes à la main après import.</span>';
+    } else if(soldeVar!=null){
+      var v=ctrlIn-ctrlOut, ok=Math.abs(v-soldeVar)<0.5;
+      ligneCtrl = '<br><span style="font-size:11px">Contrôle solde : '+(ok?'✓ cohérent':'⚠ écart de '+(v-soldeVar).toLocaleString('fr-FR')+'€')+'</span>';
+      _pdfParsed._controleOk = ok;
+    }
     info.innerHTML = '<strong>'+(parsed.titulaire||restoSel)+'</strong> · '+(periode||'?')
       + (parsed.iban ? '<br><span style="font-size:11px">IBAN '+parsed.iban+'</span>' : '')
       + '<br><span style="font-size:11px">'+ops.length+' opérations lues · entrées '+ctrlIn.toLocaleString('fr-FR')+'€ · sorties '+ctrlOut.toLocaleString('fr-FR')+'€</span>'
-      + (soldeVar!=null ? '<br><span style="font-size:11px">Contrôle solde : '+(ctrlOk?'✓ cohérent ('+variation.toLocaleString('fr-FR')+'€)':'⚠ écart de '+(variation-soldeVar).toLocaleString('fr-FR')+'€ — une opération a pu être mal lue')+'</span>' : '');
+      + ligneCtrl;
   }
 
   // Affichage des postes regroupés
@@ -1811,8 +1849,11 @@ function pdfTraiteResultat(parsed, restoSel){
       ? '<span style="color:#0d9e6e;font-size:10px;font-weight:700">✓ reconnu</span>'
       : '<span style="color:#e07d1a;font-size:10px;font-weight:700">⚠ à confirmer</span>';
 
+    var titreLigne = p.individuelle && p.libelle && p.libelle!==p.nom
+      ? p.libelle+' <span style="color:#7a90a8;font-size:10px">(à affecter)</span>'
+      : (p.nom||'?');
     h += '<div class="tx-row'+(sur?'':' tx-doute')+'" data-i="'+i+'" style="'+(sur?'':'background:#fff7ec;border-left:3px solid #e07d1a;padding-left:8px;')+'">'
-      + '<div class="tx-lbl">'+(p.nom||'?')+'<br>'+badge+' <span style="color:#7a90a8;font-size:10px">×'+p.nb+' op. · '+(p.categorie||'autre')+'</span></div>'
+      + '<div class="tx-lbl">'+titreLigne+'<br>'+badge+' <span style="color:#7a90a8;font-size:10px">'+(p.individuelle?'1 op.':('×'+p.nb+' op.'))+' · '+(p.categorie||'autre')+'</span></div>'
       + '<div class="tx-amt" style="color:'+color+'">'+(p.type==='sortie'?'- ':'+ ')+p.total.toLocaleString('fr-FR')+' €</div>'
       + '<select class="tx-sel" data-i="'+i+'" onchange="pdfMajBouton()">'+opts+'</select>'
       + '</div>';
@@ -1866,6 +1907,8 @@ function pdfImport(){
     }
   }
 
+  // 1ᵉʳ passage : cumuler les montants par poste cible (plusieurs lignes peuvent viser le même poste)
+  var cumuls={};   // "section||nom" → {sec, nom, total, categorie}
   rows.forEach(function(row){
     var i=+row.getAttribute('data-i');
     var p=postes[i]; if(!p) return;
@@ -1873,27 +1916,29 @@ function pdfImport(){
     var nom = (sel==='__NEW__') ? (p.nom||'').trim() : sel;
     if(!nom) return;
     var sec = p.type==='sortie' ? 'sorties' : 'entrees';
-    var montant = pdfNum(p.total);
+    var k = sec+'||'+nom;
+    if(!cumuls[k]) cumuls[k]={sec:sec, nom:nom, total:0, categorie:p.categorie};
+    cumuls[k].total += pdfNum(p.total);
+  });
 
-    // Trouver/créer la ligne dans RAW
+  // 2ᵉ passage : écrire dans RAW (écrasement du mois par le cumul) + Supabase
+  Object.keys(cumuls).forEach(function(k){
+    var c=cumuls[k];
     if(!RAW[restoSel]) return;
-    var ligne = RAW[restoSel][sec].find(function(x){return x.label===nom;});
+    var ligne = RAW[restoSel][c.sec].find(function(x){return x.label===c.nom;});
     if(!ligne){
-      var ti = RAW[restoSel][sec].findIndex(function(x){return (x.label||'').toUpperCase()==='TOTAL';});
-      ligne = {label:nom, vals:{}};
-      if(ti>=0) RAW[restoSel][sec].splice(ti,0,ligne); else RAW[restoSel][sec].push(ligne);
+      var ti = RAW[restoSel][c.sec].findIndex(function(x){return (x.label||'').toUpperCase()==='TOTAL';});
+      ligne = {label:c.nom, vals:{}};
+      if(ti>=0) RAW[restoSel][c.sec].splice(ti,0,ligne); else RAW[restoSel][c.sec].push(ligne);
     }
     if(!ligne.vals) ligne.vals={};
-    // ÉCRASEMENT du mois : le relevé fait foi (remplace l'éventuel "en dur")
-    ligne.vals[periode] = montant;
+    ligne.vals[periode] = c.total;   // ÉCRASEMENT du mois par le cumul (le relevé fait foi)
     imported++;
 
-    // Sauvegarde Supabase (action 'update' = écrase ce mois pour ce poste)
-    var vals={}; vals[periode]=montant;
-    sbSave(restoSel, sec, nom, vals, 'update');
-    // Mémoriser la catégorie (apprentissage) si fournie
-    if(p.categorie && window.tresoSaveCategorie){
-      window.tresoSaveCategorie(restoSel, sec, nom, p.categorie);
+    var vals={}; vals[periode]=c.total;
+    sbSave(restoSel, c.sec, c.nom, vals, 'update');
+    if(c.categorie && window.tresoSaveCategorie){
+      window.tresoSaveCategorie(restoSel, c.sec, c.nom, c.categorie);
     }
   });
 
