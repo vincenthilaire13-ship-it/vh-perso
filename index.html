@@ -1946,9 +1946,10 @@ const DOC_CATS = ['Acte / notaire','Prêt bancaire','Bail','Taxe foncière','Syn
 // ║  App folder dédiée. Le code régénère l'access token tout seul via le   ║
 // ║  refresh token (comme BK Tech / BK RH). Aucun renouvellement manuel.   ║
 // ╚══════════════════════════════════════════════════════════════════════╝
-const DBX_APP_KEY      = '6kd1aik85onauhp';
-const DBX_APP_SECRET   = 'g6e5porghtvb3bj';
-const DBX_REFRESH      = 'F6C-8ThwoWAAAAAAAAAAAR_PFhpznojC-BOy_-bb2j5ilVFeD2SOZVkxKfo6DiwJ';
+// ⚠️ Secrets Dropbox retirés du front : ils vivent désormais UNIQUEMENT côté
+// serveur, dans les variables d'environnement Vercel (DBX_APP_KEY / DBX_APP_SECRET
+// / DBX_REFRESH), lues par api/dbx.js. Le navigateur n'obtient plus qu'un
+// access_token temporaire (~4h) via /api/dbx, et jamais le refresh token.
 const DROPBOX_FOLDER   = '/Batiments'; // racine bâtiments dans l'App folder Fiscal Vincent
 const DROPBOX_TOKEN    = 'refresh'; // sentinelle : active l'upload (le vrai token vient de dbxToken())
 
@@ -1967,12 +1968,13 @@ function dbxArg(obj){
 async function dbxToken() {
   const now = Date.now();
   if(_dbxTok && now < _dbxExp - 60000) return _dbxTok; // encore valable
-  const body = new URLSearchParams({
-    grant_type:'refresh_token', refresh_token:DBX_REFRESH,
-    client_id:DBX_APP_KEY, client_secret:DBX_APP_SECRET
-  });
-  const r = await fetch('https://api.dropboxapi.com/oauth2/token', {method:'POST', body});
-  if(!r.ok) throw new Error('Auth Dropbox échouée ('+r.status+')');
+  // On demande un access_token temporaire au gardien serveur /api/dbx.
+  // Le refresh token et le secret d'app restent côté Vercel, jamais ici.
+  const r = await fetch('/api/dbx', {method:'POST', headers:{'Content-Type':'application/json'}});
+  if(!r.ok){
+    let detail=''; try{ detail=(await r.json()).error||''; }catch(e){}
+    throw new Error('Auth Dropbox échouée ('+r.status+')'+(detail?' : '+detail:''));
+  }
   const j = await r.json();
   _dbxTok = j.access_token;
   _dbxExp = now + (j.expires_in ? j.expires_in*1000 : 14400000);
